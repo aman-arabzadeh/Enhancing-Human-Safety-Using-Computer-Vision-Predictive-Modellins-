@@ -6,8 +6,6 @@ import csv
 import utilsNeeded
 from ultralytics import YOLO
 
-# Load a pretrained YOLO model (recommended for training)
-model = YOLO('yolov8n.pt')
 
 
 # Authorship Information
@@ -42,6 +40,8 @@ This code can be used for navigating dynamic environments, like warehouses, to t
 """
 
 def main():
+    # Load a pretrained YOLO model (recommended for training)
+    model = YOLO('yolov8n.pt')
     source = 0  # Video capture source
     cap = cv2.VideoCapture(source)
     kalman_filters = {}
@@ -93,6 +93,8 @@ def main():
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    # Load the YOLOv5 model pre-trained on COCO dataset
-   # model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+
     main()
+
+# git status
+#git push origin main
