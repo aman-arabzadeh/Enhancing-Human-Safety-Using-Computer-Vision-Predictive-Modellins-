@@ -1,0 +1,17 @@
+What I need in this project:
+I need 360   camera, but Don't have access to 360 camera.
+I use my own laptop camera to detect using YOLOv8
+
+Using YOLO9 first then changed to YOLOv8 due to better comunity support and security resean, often newer versions have buggs.
+
+
+The Kalman Filter class I need to estimate the state of a linear dynamic system from a series of noisy measurements.
+OpenCV hs build in functions for kalman filtering, don't need implement  reinvent wheel again.
+Predicts future position based on current velocity using Dead Reckoning using Kalman here.
+run_yolov8_inference(model, frame) to return all the cords  [bounding box coordinates (x1, y1, x2, y2), confidence score, class ID, class name]
+Euclidean distance between the two points.
+def beep_alert(frequency=2500, duration=1000): if near  Threshold.
+get_color_by_id(class_id): Generates a unique color for each class ID to ensure consistency across runs.
+
+I also need a script Python that plots individual detections and predictions as distinct points,
+helping the reader distinguish between what has been measured (detections) and what is being predicted (future positions).

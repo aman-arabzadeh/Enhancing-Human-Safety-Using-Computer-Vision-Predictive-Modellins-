@@ -3,6 +3,8 @@ import numpy as np
 
 class KalmanFilter:
     """
+    Check this: https://www.robots.ox.ac.uk/~ian/Teaching/Estimation/LectureNotes2.pdf
+    check this for detail_: https://stackoverflow.com/questions/72940506/understanding-the-kalman-filter-class-in-opencv
     Initializes the Kalman Filter for a simple dynamic system with position and velocity.
 
     The Kalman Filter estimates the state of a linear dynamic system from a series of noisy measurements.

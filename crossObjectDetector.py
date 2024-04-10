@@ -20,6 +20,13 @@ Supervisor: Emin Zerman
 Examiner: Stefan Forsström
 Course code: DT099G
 Programme: Degree of Bachelor of Science with a major in Computer Engineering
+
+
+
+Resources used: 
+https://opencv.org/
+https://stackoverflow.com/
+https://github.com
 """
 
 # Main Functionality
