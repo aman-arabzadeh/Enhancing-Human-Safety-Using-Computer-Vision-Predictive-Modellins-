@@ -2,7 +2,6 @@
 import cv2
 import numpy as np
 import winsound
-from KalmanFilter import KalmanFilter
 import hashlib
 
 
@@ -93,8 +92,8 @@ def dead_reckoning(kf, dt=1):
         tuple: Future position coordinates (future_x, future_y).
     """
     x, y, vx, vy = kf.x.flatten()
-    future_x = x + vx * dt
-    future_y = y + vy * dt
+    future_x = x + (vx * dt)
+    future_y = y + (vy * dt)
     return int(future_x), int(future_y)
 
 # Function to play a beep sound as an alert
@@ -129,3 +128,64 @@ def check_proximity(detections, threshold=50):
             if distance < threshold:
                 return True
     return False
+
+
+def consolidate_detections(detections, iou_threshold=0.5):
+    """
+    Consolidates detections by merging overlapping bounding boxes based on IoU threshold.
+
+    Parameters:
+        detections (list): List of detections, where each detection is [x1, y1, x2, y2, confidence, class_id, class_name].
+        iou_threshold (float): Threshold for IoU to consider two detections as overlapping.
+
+    Returns:
+        list: Consolidated list of detections.
+    """
+    if not detections:
+        return []
+
+    # Initialize list to keep track of merged detections
+    consolidated = []
+
+    # Sort detections by confidence score in descending order
+    detections.sort(key=lambda x: x[4], reverse=True)
+
+    # Array to keep track of whether a detection has been used
+    used = [False] * len(detections)
+
+    for i in range(len(detections)):
+        if not used[i]:
+            # Mark this detection as used
+            used[i] = True
+            x1, y1, x2, y2, conf, cls_id, class_name = detections[i]
+            # Initialize merged area as the area of the current detection
+            cx1, cy1, cx2, cy2 = x1, y1, x2, y2
+
+            # Look for overlapping detections to merge
+            for j in range(i + 1, len(detections)):
+                if not used[j]:
+                    nx1, ny1, nx2, ny2, nconf, ncls_id, nclass_name = detections[j]
+
+                    # Calculate the IoU
+                    inter_x1 = max(cx1, nx1)
+                    inter_y1 = max(cy1, ny1)
+                    inter_x2 = min(cx2, nx2)
+                    inter_y2 = min(cy2, ny2)
+                    inter_area = max(0, inter_x2 - inter_x1) * max(0, inter_y2 - inter_y1)
+                    area1 = (cx2 - cx1) * (cy2 - cy1)
+                    area2 = (nx2 - nx1) * (ny2 - ny1)
+                    union_area = area1 + area2 - inter_area
+                    iou = inter_area / union_area if union_area > 0 else 0
+
+                    # If IoU exceeds the threshold, merge the detections
+                    if iou >= iou_threshold:
+                        used[j] = True  # Mark detection as used
+                        # Merge the bounding boxes
+                        cx1, cy1 = min(cx1, nx1), min(cy1, ny1)
+                        cx2, cy2 = max(cx2, nx2), max(cy2, ny2)
+                        conf = max(conf, nconf)  # Take the higher confidence
+
+            # Add merged detection to the consolidated list
+            consolidated.append([cx1, cy1, cx2, cy2, conf, cls_id, class_name])
+
+    return consolidated
