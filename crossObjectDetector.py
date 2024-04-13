@@ -28,12 +28,12 @@ https://stackoverflow.com/
 https://github.com
 https://pieriantraining.com/kalman-filter-opencv-python-example/
 """
-
 # Main Functionality
 """
-This Python script integrates YOLOv5 for object detection, Kalman filtering for object tracking,
-dead reckoning for predicting future positions, and audio alerts for detecting close object proximity.
-This code can monitor movements, detect anomalies or collisions, and trigger alerts for maintenance or safety measures.
+This Python script integrates YOLOv8 for object detection, Kalman filtering for object tracking,
+dead reckoning for predicting future positions, and audio alerts for detectiopn inside the person boxe zone.
+This code can monitor movements around robotic arms to alert a trigger of sound to alert abbout hazards.
+In this code I use my own Kalman filter implementation. 
 """
 
 
@@ -51,10 +51,9 @@ def main():
     source = 0  # Video capture source
     cap = cv2.VideoCapture(source)
     fps = cap.get(cv2.CAP_PROP_FPS)
-    print("Frame Rate:", fps)
 
     kalman_filters = {}
-  #  object_id_counter = 1  # Initialize object ID counter
+    object_id = 1
 
     # Open a file to save the detection and prediction data
     with open('tracking_and_predictions.csv', 'w', newline='') as file:
@@ -69,6 +68,7 @@ def main():
             # Run YOLO inference to get detections
             detections = utilsNeeded.run_yolov8_inference(model, frame)
 
+
             # Consolidate detections to prevent duplicate tracking
             consolidated_detections = utilsNeeded.consolidate_detections(detections)
 
@@ -77,12 +77,8 @@ def main():
                 center_x = int((x1 + x2) / 2)
                 center_y = int((y1 + y2) / 2)
 
-                #object_id = object_id_counter
-               # object_id_counter += 1
-
-                #if object_id not in kalman_filters:
-                kalman_filters[cls] = KalmanFilter(dt=1 / fps, u=0.0, std_acc=0.1, std_meas=0.1)
-
+                if cls not in kalman_filters:
+                    kalman_filters[cls] = KalmanFilter(dt=1 / fps, u=0.0, std_acc=0.1, std_meas=0.1)
                 kf = kalman_filters[cls]
                 kf.predict()
                 meas = np.array([[center_x], [center_y]])
@@ -98,15 +94,17 @@ def main():
                 cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
                 label = f"{class_name} ({cls}): {conf:.2f}"
                 cv2.putText(frame, label, (int(x1), int(y1 - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+               # object_id += 1
 
-            # Filter detections to include only person
-            person_detections = [detection for detection in consolidated_detections if detection[6] == 'person']
+                # Filter detections to include person, cup, and other objects
+                person_detections = [detection for detection in consolidated_detections if detection[6] == 'person']
+                cup_detections = [detection for detection in consolidated_detections if detection[6] == 'cup']
+                other_objects = [detection for detection in consolidated_detections if detection[6] != 'person']
 
-            # Check proximity specifically for person detections
-            if utilsNeeded.check_proximity(person_detections):
-                print("person in close proximity detected.")
-                utilsNeeded.beep_alert(frequency=3000, duration=500)
-
+                # Check proximity specifically for person detections
+                if utilsNeeded.check_proximity(person_detections,other_objects):
+                    print("Person detected near a cup or other objects.")
+                    utilsNeeded.beep_alert(frequency=3000, duration=500)
             cv2.imshow("Cross Object Detector", frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break

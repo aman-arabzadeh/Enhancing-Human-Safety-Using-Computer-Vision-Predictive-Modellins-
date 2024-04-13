@@ -3,7 +3,27 @@ import cv2
 import numpy as np
 import winsound
 import hashlib
+# Authorship Information
+"""
+Author: Koray Aman Arabzadeh
+Thesis: Mid Sweden University.
+Bachelor Thesis - Bachelor of Science in Engineering, Specialisation in Computer Engineering
+Main field of study: Computer Engineering
+Credits: 15 hp (ECTS)
+Semester, Year: Spring, 2024
+Supervisor: Emin Zerman
+Examiner: Stefan Forsström
+Course code: DT099G
+Programme: Degree of Bachelor of Science with a major in Computer Engineering
 
+
+
+Resources used: 
+https://opencv.org/
+https://stackoverflow.com/
+https://github.com
+https://pieriantraining.com/kalman-filter-opencv-python-example/
+"""
 
 def run_yolov8_inference(model, frame):
     """
@@ -37,6 +57,8 @@ def run_yolov8_inference(model, frame):
             detections.append([x1, y1, x2, y2, conf, cls_id, class_name])
 
     return detections
+
+
 # Function to run YOLOv5 inference on a frame and extract detections
 def run_yolov5_inference(model, frame):
     """
@@ -59,8 +81,6 @@ def run_yolov5_inference(model, frame):
     return detections
 
 
-
-
 # Function to generate unique color for each class ID
 def get_color_by_id(class_id):
     """
@@ -77,6 +97,7 @@ def get_color_by_id(class_id):
     g = int(hash_value[2:4], 16)
     b = int(hash_value[4:6], 16)
     return [r, g, b]
+
 
 # Function to predict future position based on current velocity using Dead Reckoning
 def dead_reckoning(kf, dt=1):
@@ -96,6 +117,20 @@ def dead_reckoning(kf, dt=1):
     future_y = y + (vy * dt)
     return int(future_x), int(future_y)
 
+
+def dead_reckoning2(kf, dt=1):
+
+    # Extract the current position (x, y) and velocity (vx, vy) from the Kalman filter's statePost
+    x, y, vx, vy = kf.statePost.flatten()
+    print(kf.statePost.flatten())
+    # Calculate the future position based on the current position and velocity
+    future_x = x + (vx * dt)
+    future_y = y + (vy * dt)
+
+    # Return the predicted future positions as integers
+    return int(future_x), int(future_y)
+
+
 # Function to play a beep sound as an alert
 def beep_alert(frequency=2500, duration=1000):
     """
@@ -107,25 +142,25 @@ def beep_alert(frequency=2500, duration=1000):
     """
     winsound.Beep(frequency, duration)
 
-# Function to check if any two detections are within a specified proximity threshold
-def check_proximity(detections, threshold=50):
+
+def check_proximity(person_detections, specific_object_detections):
     """
-    Checks if any two detections are within a specified proximity threshold.
+    Checks if any specific object detection overlaps with the bounding box of the person.
 
     Args:
-        detections (list): List of detections, where each detection is represented as [x1, y1, x2, y2, ...].
-        threshold (float): Maximum distance threshold for considering two detections as close.
+        person_detections (list): List of detections for the person, where each detection is represented as [x1, y1, x2, y2, ...].
+        specific_object_detections (list): List of detections for the specific object, where each detection is represented as [x1, y1, x2, y2, ...].
 
     Returns:
-        bool: True if any two detections are close to each other, False otherwise.
+        bool: True if any specific object detection overlaps with the bounding box of the person, False otherwise.
     """
-    num_detections = len(detections)
-    for i in range(num_detections):
-        for j in range(i + 1, num_detections):
-            x1, y1, _, _, _, _, _ = detections[i]
-            x2, y2, _, _, _, _, _ = detections[j]
-            distance = np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
-            if distance < threshold:
+    for person_det in person_detections:
+        x1_person, y1_person, x2_person, y2_person, _, _, _ = person_det
+        for obj_det in specific_object_detections:
+            x1_obj, y1_obj, x2_obj, y2_obj, _, _, _ = obj_det
+            # Check if there's any intersection between the bounding boxes
+            if (x1_obj < x2_person and x2_obj > x1_person and
+                    y1_obj < y2_person and y2_obj > y1_person):
                 return True
     return False
 
