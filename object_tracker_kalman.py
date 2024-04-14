@@ -4,6 +4,41 @@ import csv
 import logging
 from ultralytics import YOLO
 import utilsNeeded
+"""
+Author: Koray Aman Arabzadeh
+Thesis: Mid Sweden University.
+Bachelor Thesis - Bachelor of Science in Engineering, Specialisation in Computer Engineering
+Main field of study: Computer Engineering
+Credits: 15 hp (ECTS)
+Semester, Year: Spring, 2024
+Supervisor: Emin Zerman
+Examiner: Stefan Forsström
+Course code: DT099G
+Programme: Degree of Bachelor of Science with a major in Computer Engineering
+
+
+
+Resources used: 
+https://opencv.org/
+https://stackoverflow.com/
+https://github.com
+https://pieriantraining.com/kalman-filter-opencv-python-example/
+
+
+
+
+
+
+
+"""
+
+# Main Functionality
+"""
+This Python script integrates YOLOv8 for object detection, Kalman filtering for object tracking,
+dead reckoning for predicting future positions, and audio alerts for detectiopn inside the person boxe zone.
+This code can monitor movements around robotic arms to alert a trigger of sound to alert abbout hazards.
+In this code I use openCV kalman  filter implementation and my own dead reckoning function
+"""
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -31,7 +66,7 @@ class KalmanFilterWrapper:
         velocity_x = prediction[2, 0]
         velocity_y = prediction[3, 0]
         # Apply dead reckoning to extend the prediction further into the future
-        #  `dt` is the time step for future prediction, adjust dt as necessary
+        #  `dt` is the time step for future prediction
         dt = 1 / fps  # Time step based on frame rate
         self.future_x = current_predicted_x + velocity_x * dt
         self.future_y = current_predicted_y + velocity_y * dt
@@ -87,7 +122,7 @@ class ObjectTracker:
         other_objects = [d for d in detections if d[6] != 'person']
         if utilsNeeded.check_proximity(person_detections, other_objects):
             utilsNeeded.beep_alert(frequency=3000, duration=500)
-    # Usage in your main tracking loop
+
     def track_objects(self, frame, detections):
         for det in detections:
             center_x, center_y, kf_wrapper = self.apply_kalman_filter(det)

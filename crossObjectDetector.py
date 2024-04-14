@@ -1,3 +1,6 @@
+# main.py
+from datetime import time
+
 import cv2
 import numpy as np
 import torch
@@ -5,7 +8,39 @@ import csv
 import utilsNeeded
 from ultralytics import YOLO
 from KalmanFilter import KalmanFilter
-import time  # Import time module to work with timestamps
+
+# Authorship Information
+"""
+Author: Koray Aman Arabzadeh
+Thesis: Mid Sweden University.
+Bachelor Thesis - Bachelor of Science in Engineering, Specialisation in Computer Engineering
+Main field of study: Computer Engineering
+Credits: 15 hp (ECTS)
+Semester, Year: Spring, 2024
+Supervisor: Emin Zerman
+Examiner: Stefan Forsström
+Course code: DT099G
+Programme: Degree of Bachelor of Science with a major in Computer Engineering
+
+
+
+Resources used: 
+https://opencv.org/
+https://stackoverflow.com/
+https://github.com
+https://pieriantraining.com/kalman-filter-opencv-python-example/
+"""
+
+
+
+# Usage Instructions
+"""
+To run, use the following command:
+python .\crossObjectDetector.py  
+
+This code can be used for navigating dynamic environments, like warehouses, to track objects or other robots, plan paths, and avoid collisions.
+"""
+
 
 def main():
     # Load a pretrained YOLO model

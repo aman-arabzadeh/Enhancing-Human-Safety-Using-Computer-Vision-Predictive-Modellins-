@@ -6,6 +6,41 @@ import logging
 from ultralytics import YOLO
 import utilsNeeded
 import time  # Import time to work with timestamps
+"""
+Author: Koray Aman Arabzadeh
+Thesis: Mid Sweden University.
+Bachelor Thesis - Bachelor of Science in Engineering, Specialisation in Computer Engineering
+Main field of study: Computer Engineering
+Credits: 15 hp (ECTS)
+Semester, Year: Spring, 2024
+Supervisor: Emin Zerman
+Examiner: Stefan Forsström
+Course code: DT099G
+Programme: Degree of Bachelor of Science with a major in Computer Engineering
+
+
+
+Resources used: 
+https://opencv.org/
+https://stackoverflow.com/
+https://github.com
+https://pieriantraining.com/kalman-filter-opencv-python-example/
+
+
+
+
+
+
+
+"""
+
+# Main Functionality
+"""
+This Python script integrates YOLOv8 for object detection, Kalman filtering for object tracking,
+dead reckoning for predicting future positions, and audio alerts for detectiopn inside the person boxe zone.
+This code can monitor movements around robotic arms to alert a trigger of sound to alert abbout hazards.
+In this code I use openCV kalman  filter implementation and my own dead reckoning function
+"""
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
