@@ -1,11 +1,9 @@
-import cap as cap
 import cv2
 import numpy as np
 import csv
 import logging
 from ultralytics import YOLO
 import utilsNeeded
-import time  # Import time to work with timestamps
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -18,20 +16,23 @@ class KalmanFilterWrapper:
                                              [0, 1, 0, 1],
                                              [0, 0, 1, 0],
                                              [0, 0, 0, 1]], np.float32)
-        self.base_process_noise = np.eye(4, dtype=np.float32) * 0.03
-        self.kf.processNoiseCov = self.base_process_noise
+        self.kf.processNoiseCov = np.eye(4, dtype=np.float32) * 0.03
 
     def correct(self, measurement):
         self.kf.correct(measurement)
 
-    def predict(self, fps, velocity_scale=1.0):
-        self.kf.processNoiseCov = self.base_process_noise * velocity_scale
+    def predict(self, fps):
+        # Predict the next state (position and velocity)
         prediction = self.kf.predict()
+        # Current prediction for position
         current_predicted_x = prediction[0, 0]
         current_predicted_y = prediction[1, 0]
+        # Velocity prediction
         velocity_x = prediction[2, 0]
         velocity_y = prediction[3, 0]
-        dt = 1 / fps
+        # Apply dead reckoning to extend the prediction further into the future
+        # Assuming `dt` is the time step for future prediction, adjust dt as necessary
+        dt = 1 / fps  # Time step based on frame rate
         self.future_x = current_predicted_x + velocity_x * dt
         self.future_y = current_predicted_y + velocity_y * dt
         return prediction
@@ -43,7 +44,6 @@ class ObjectTracker:
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
         self.kalman_filters = {}
         self.setup_csv_writer()
-        self.start_time = time.time()  # Start time of the tracking
 
     def load_model(self, model_path):
         try:
@@ -65,7 +65,7 @@ class ObjectTracker:
         try:
             self.file = open('tracking_and_predictions.csv', 'w', newline='')
             self.writer = csv.writer(self.file)
-            self.writer.writerow(['timestamp', 'det_x', 'det_y', 'pred_x', 'pred_y', 'class_name'])
+            self.writer.writerow(['det_x', 'det_y', 'pred_x', 'pred_y', 'class_name'])
         except IOError as e:
             logging.error(f"File operations failed: {str(e)}")
             exit(1)
@@ -83,11 +83,12 @@ class ObjectTracker:
                 break
         self.cleanup()
 
+    # Usage in your main tracking loop
     def track_objects(self, frame, detections):
         for det in detections:
-            elapsed_time = time.time() - self.start_time  # Calculate elapsed time since start
             center_x, center_y, kf_wrapper = self.apply_kalman_filter(det)
-            self.writer.writerow([elapsed_time, center_x, center_y, kf_wrapper.future_x, kf_wrapper.future_y, det[6]])
+            # Writing extended future predictions to CSV
+            self.writer.writerow([center_x, center_y, kf_wrapper.future_x, kf_wrapper.future_y, det[6]])
             self.draw_predictions(frame, det, kf_wrapper)
 
     def apply_kalman_filter(self, det):
