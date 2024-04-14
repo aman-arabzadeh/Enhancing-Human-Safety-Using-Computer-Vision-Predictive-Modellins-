@@ -31,7 +31,7 @@ class KalmanFilterWrapper:
         velocity_x = prediction[2, 0]
         velocity_y = prediction[3, 0]
         # Apply dead reckoning to extend the prediction further into the future
-        # Assuming `dt` is the time step for future prediction, adjust dt as necessary
+        #  `dt` is the time step for future prediction, adjust dt as necessary
         dt = 1 / fps  # Time step based on frame rate
         self.future_x = current_predicted_x + velocity_x * dt
         self.future_y = current_predicted_y + velocity_y * dt
@@ -82,7 +82,11 @@ class ObjectTracker:
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         self.cleanup()
-
+    def check_and_alert(self, detections):
+        person_detections = [d for d in detections if d[6] == 'person']
+        other_objects = [d for d in detections if d[6] != 'person']
+        if utilsNeeded.check_proximity(person_detections, other_objects):
+            utilsNeeded.beep_alert(frequency=3000, duration=500)
     # Usage in your main tracking loop
     def track_objects(self, frame, detections):
         for det in detections:
@@ -90,6 +94,7 @@ class ObjectTracker:
             # Writing extended future predictions to CSV
             self.writer.writerow([center_x, center_y, kf_wrapper.future_x, kf_wrapper.future_y, det[6]])
             self.draw_predictions(frame, det, kf_wrapper)
+            self.check_and_alert(detections)
 
     def apply_kalman_filter(self, det):
         x1, y1, x2, y2, _, cls, class_name = det
