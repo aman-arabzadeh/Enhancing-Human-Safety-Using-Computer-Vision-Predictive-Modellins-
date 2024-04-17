@@ -1,6 +1,5 @@
 # utilsNeeded.py
 import cv2
-import numpy as np
 import winsound
 import hashlib
 # Authorship Information
@@ -143,24 +142,55 @@ def beep_alert(frequency=2500, duration=1000):
     winsound.Beep(frequency, duration)
 
 
-def check_proximity(person_detections, specific_object_detections):
+def check_proximity_simple(target, specific_object_detections, proximity_threshold):
     """
-    Checks if any specific object detection overlaps with the bounding box of the person.
+    Checks if any specific object detection is within a proximity threshold of the bounding box of the target.
 
     Args:
-        person_detections (list): List of detections for the person, where each detection is represented as [x1, y1, x2, y2, ...].
+        target (list): List of detections for the target, where each detection is represented as [x1, y1, x2, y2, ...].
+        specific_object_detections (list): List of detections for the specific object, where each detection is represented as [x1, y1, x2, y2, ...].
+        proximity_threshold (float): Distance threshold to check for proximity.
+
+    Returns:
+        bool: True if any specific object detection is near the target within the proximity threshold, False otherwise.
+    """
+    for values in target:
+        x1_target, y1_target, x2_target, y2_target, *_ = values
+        center_target_x = (x1_target + x2_target) / 2
+        center_target_y = (y1_target + y2_target) / 2
+
+        for obj_det in specific_object_detections:
+            x1_obj, y1_obj, x2_obj, y2_obj, *_ = obj_det
+            center_obj_x = (x1_obj + x2_obj) / 2
+            center_obj_y = (y1_obj + y2_obj) / 2
+
+            # Calculate the Euclidean distance between centers
+            distance = ((center_obj_x - center_target_x) ** 2 + (center_obj_y - center_target_y) ** 2) ** 0.5
+            if distance <= proximity_threshold:
+                return True
+    return False
+
+
+def check_proximity(target, specific_object_detections):
+    """
+    Checks if any specific object detection overlaps with the bounding box of the target.
+
+    Args:
+        person_detections (list): List of detections for the target, where each detection is represented as [x1, y1, x2, y2, ...].
         specific_object_detections (list): List of detections for the specific object, where each detection is represented as [x1, y1, x2, y2, ...].
 
     Returns:
-        bool: True if any specific object detection overlaps with the bounding box of the person, False otherwise.
+        bool: True if any specific object detection overlaps with the bounding box of the target, False otherwise.
+        :param specific_object_detections:
+        :param target:
     """
-    for person_det in person_detections:
-        x1_person, y1_person, x2_person, y2_person, _, _, _ = person_det
+    for values in target:
+        x1_target, y1_target, x2_target, y2_target, _, _, _ = values
         for obj_det in specific_object_detections:
             x1_obj, y1_obj, x2_obj, y2_obj, _, _, _ = obj_det
             # Check if there's any intersection between the bounding boxes
-            if (x1_obj < x2_person and x2_obj > x1_person and
-                    y1_obj < y2_person and y2_obj > y1_person):
+            if (x1_obj < x2_target and x2_obj > x1_target and
+                    y1_obj < y2_target and y2_obj > y1_target):
                 return True
     return False
 

@@ -8,33 +8,7 @@ import logging
 from ultralytics import YOLO
 import utilsNeeded
 import time  # Import time to work with timestamps
-
-"""
-Author: Koray Aman Arabzadeh
-Thesis: Mid Sweden University.
-Bachelor Thesis - Bachelor of Science in Engineering, Specialisation in Computer Engineering
-Main field of study: Computer Engineering
-Credits: 15 hp (ECTS)
-Semester, Year: Spring, 2024
-Supervisor: Emin Zerman
-Examiner: Stefan Forsström
-Course code: DT099G
-Programme: Degree of Bachelor of Science with a major in Computer Engineering
-
-
-
-Resources used: 
-https://opencv.org/
-https://stackoverflow.com/
-https://github.com
-https://pieriantraining.com/kalman-filter-opencv-python-example/
-
-
-
-
-
-
-"""
+from kalmanSetUp import KalmanFilterWrapper
 
 # Main Functionality
 """
@@ -49,40 +23,6 @@ In this code I use openCV kalman  filter implementation and my own dead reckonin
 
 
 """
-
-# Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-
-class KalmanFilterWrapper:
-    def __init__(self):
-        self.future_x = None
-        self.future_y = None
-        self.kf = cv2.KalmanFilter(4, 2)  # State: [x, y, dx, dy], Measurement: [x, y]
-        self.kf.measurementMatrix = np.eye(2, 4, dtype=np.float32)
-        self.kf.transitionMatrix = np.array([[1, 0, 1, 0],
-                                             [0, 1, 0, 1],
-                                             [0, 0, 1, 0],
-                                             [0, 0, 0, 1]], np.float32)
-        self.base_process_noise = np.eye(4, dtype=np.float32) * 0.03
-        self.kf.processNoiseCov = self.base_process_noise
-
-    def correct(self, measurement):
-        self.kf.correct(measurement)
-
-    def predict(self, fps, velocity_scale=1.0):
-        self.kf.processNoiseCov = self.base_process_noise * velocity_scale
-        prediction = self.kf.predict()
-        current_predicted_x = prediction[0, 0]
-        current_predicted_y = prediction[1, 0]
-        velocity_x = prediction[2, 0]
-        velocity_y = prediction[3, 0]
-        dt = 1 / fps
-        self.future_x = current_predicted_x + velocity_x * dt
-        self.future_y = current_predicted_y + velocity_y * dt
-        return prediction
-
-
 class ObjectTracker:
     def __init__(self, model_path, source=0):
         self.model = self.load_model(model_path)
@@ -94,7 +34,6 @@ class ObjectTracker:
         # Initialize other attributes
         self.alert_times = []
         self.alert_start_time = None
-
 
     def load_model(self, model_path):
         try:
@@ -165,17 +104,17 @@ class ObjectTracker:
 
     Hazard Time:
     This is the timestamp at which a potential hazard is first detected by the system. 
-    
-    
+
+
     Alert Time:
     This is the timestamp when an alert is actually issued by the system in response to the detected hazard. 
-    
+
     Person Class:
     This refers to the classification of the detected entity as a "person" in the object detection system.
-    
+
     Object Class:
     This describes the type of object that has been detected as posing a potential hazard when in close proximity to a person. 
-    
+
     Response Time:
     This is calculated as the difference between the "Alert Time" and the "Hazard Time". 
     It measures how quickly the system responds to a detected hazard by issuing an alert. 
@@ -205,12 +144,16 @@ class ObjectTracker:
 
         except IOError as e:
             logging.error(f"Failed to save alert time: {str(e)}")
+
     def apply_kalman_filter(self, det):
         x1, y1, x2, y2, _, cls, class_name = det
         center_x = int((x1 + x2) / 2)
         center_y = int((y1 + y2) / 2)
+        # Check if a Kalman filter already exists for this class; if not, create and initialize one
         if cls not in self.kalman_filters:
             self.kalman_filters[cls] = KalmanFilterWrapper()
+            # Initialize with the first detected center position and assume initial velocities are zero
+            self.kalman_filters[cls].initialize(center_x, center_y)
         kf_wrapper = self.kalman_filters[cls]
         measurement = np.array([[center_x], [center_y]], np.float32)
         kf_wrapper.correct(measurement)
@@ -231,7 +174,3 @@ class ObjectTracker:
         self.file.close()
         logging.info("Cleaned up resources and exited.")
 
-
-if __name__ == "__main__":
-    tracker = ObjectTracker('yolov8n.pt')
-    tracker.run()
