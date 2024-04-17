@@ -15,3 +15,9 @@ get_color_by_id(class_id): Generates a unique color for each class ID to ensure 
 
 I also need a script Python that plots individual detections and predictions as distinct points,
 helping the reader distinguish between what has been measured (detections) and what is being predicted (future positions).
+
+
+
+check the videos:
+https://www.youtube.com/watch?v=RP4MKPI6I-U
+https://github.com/SriramEmarose/Motion-Prediction-with-Kalman-Filter/blob/master/KalmanFilter.py
