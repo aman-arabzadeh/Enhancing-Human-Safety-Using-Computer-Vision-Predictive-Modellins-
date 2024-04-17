@@ -65,8 +65,8 @@ class ObjectTracker:
             ret, frame = self.cap.read()
             if not ret:
                 break
-            detections = utilsNeeded.run_yolov8_inference(self.model, frame)
-            consolidated_detections = utilsNeeded.consolidate_detections(detections)
+            consolidated_detections = utilsNeeded.run_yolov8_inference(self.model, frame)
+            # consolidated_detections = utilsNeeded.consolidate_detections(detections)
             self.track_objects(frame, consolidated_detections)
             cv2.imshow("Frame", frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
