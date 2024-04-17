@@ -168,6 +168,10 @@ def check_proximity_simple(target, specific_object_detections, proximity_thresho
             distance = ((center_obj_x - center_target_x) ** 2 + (center_obj_y - center_target_y) ** 2) ** 0.5
             if distance <= proximity_threshold:
                 return True
+            # Check if there's any intersection between the bounding boxes
+            elif (x1_obj < x2_target and x2_obj > x1_target and
+                    y1_obj < y2_target and y2_obj > y1_target):
+                return True
     return False
 
 
