@@ -145,6 +145,7 @@ def beep_alert(frequency=2500, duration=1000):
 def check_proximity_simple(target, specific_object_detections, proximity_threshold):
     """
     Checks if any specific object detection is within a proximity threshold of the bounding box of the target.
+    also checks  if any specific object detection overlaps with the bounding box of the target just in case.
 
     Args:
         target (list): List of detections for the target, where each detection is represented as [x1, y1, x2, y2, ...].
@@ -168,10 +169,12 @@ def check_proximity_simple(target, specific_object_detections, proximity_thresho
             distance = ((center_obj_x - center_target_x) ** 2 + (center_obj_y - center_target_y) ** 2) ** 0.5
             if distance <= proximity_threshold:
                 return True
+            """
             # Check if there's any intersection between the bounding boxes
             elif (x1_obj < x2_target and x2_obj > x1_target and
                     y1_obj < y2_target and y2_obj > y1_target):
                 return True
+            """
     return False
 
 
@@ -196,6 +199,33 @@ def check_proximity(target, specific_object_detections):
             if (x1_obj < x2_target and x2_obj > x1_target and
                     y1_obj < y2_target and y2_obj > y1_target):
                 return True
+    return False
+
+
+def check_nearness(target, specific_object_detections):
+    """
+    Checks if any specific object detection is near the bounding box of the target without overlapping.
+
+    Args:
+        target (list): List of detections for the target, where each detection is represented as [x1, y1, x2, y2].
+        specific_object_detections (list): List of detections for specific objects, where each detection is represented as [x1, y1, x2, y2].
+
+    Returns:
+        bool: True if any specific object detection is near the target without overlapping, False otherwise.
+    """
+    for t_values in target:
+        x1_target, y1_target, x2_target, y2_target, _, _, _ = t_values
+
+        for obj_det in specific_object_detections:
+            x1_obj, y1_obj, x2_obj, y2_obj, _, _, _= obj_det
+
+            # Check if bounding boxes are near without overlapping
+            if (x2_obj < x1_target and (x1_target - x2_obj) <= 10) or \
+               (x1_obj > x2_target and (x1_obj - x2_target) <= 10) or \
+               (y2_obj < y1_target and (y1_target - y2_obj) <= 10) or \
+               (y1_obj > y2_target and (y1_obj - y2_target) <= 10):
+                return True
+
     return False
 
 

@@ -87,7 +87,7 @@ class ObjectTracker:
 
         for person in person_detections:
             for obj in other_objects:
-                if utilsNeeded.check_proximity([person], [obj]):  # Check proximity
+                if utilsNeeded.check_proximity([person], [obj]) or utilsNeeded.check_nearness([person], [obj]):  # Check proximity or near check bounding box
                     if self.alert_start_time is None:
                         self.alert_start_time = elapsed_time  # Log the relative time when hazard detected
                     utilsNeeded.beep_alert(frequency=3000, duration=500)
