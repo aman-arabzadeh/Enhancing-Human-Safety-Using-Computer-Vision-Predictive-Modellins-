@@ -202,7 +202,7 @@ def check_proximity(target, specific_object_detections):
     return False
 
 
-def check_nearness(target, specific_object_detections):
+def check_nearness(target, specific_object_detections,):
     """
     Checks if any specific object detection is near the bounding box of the target without overlapping.
 

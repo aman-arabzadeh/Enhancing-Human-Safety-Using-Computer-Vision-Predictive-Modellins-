@@ -25,6 +25,7 @@ In this code I use openCV kalman  filter implementation and my own dead reckonin
 """
 class ObjectTracker:
     def __init__(self, model_path, source=0):
+        self.writer = None
         self.model = self.load_model(model_path)
         self.cap = self.initialize_video_capture(source)
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
@@ -34,7 +35,52 @@ class ObjectTracker:
         # Initialize other attributes
         self.alert_times = []
         self.alert_start_time = None
+        self.last_positions = {}  # To store last known positions for velocity calculation
 
+    def apply_dead_reckoning(self, det, time_step=1.0):
+        """
+        Apply dead reckoning to predict future position based on current velocity.
+        `det`: Detection information, including current position.
+        `time_step`: Future time step in seconds for prediction.
+        """
+
+        x1, y1, x2, y2, _, cls, class_name = det
+        current_center_x = int((x1 + x2) / 2)
+        current_center_y = int((y1 + y2) / 2)
+
+        # Get last position and calculate velocity
+        if cls in self.last_positions:
+            last_x, last_y, last_time = self.last_positions[cls]
+            print(f'last_time is {last_time}')
+            time_delta = time.time() - last_time
+
+            # Ensuring so that time_delta is not zero to avoid division by zero,
+            if time_delta > 0.001:  # Using 0.001 seconds as a minimal delta
+                print(f'time delta is {time_delta}')
+                velocity_x = (current_center_x - last_x) / time_delta
+                velocity_y = (current_center_y - last_y) / time_delta
+            else:
+                velocity_x, velocity_y = 0, 0  # Default to zero velocity if time_delta is too small
+        else:
+            velocity_x, velocity_y = 0, 0  # Assume starting velocity is zero
+
+        # Predict future position using dead reckoning
+        future_x = int(current_center_x + velocity_x * time_step)
+        future_y = int(current_center_y + velocity_y * time_step)
+
+        # Update last positions
+        self.last_positions[cls] = (current_center_x, current_center_y, time.time())
+
+        return current_center_x, current_center_y, future_x, future_y
+
+    def track_objects_DR(self, frame, detections):
+        for det in detections:
+            elapsed_time = time.time() - self.start_time
+            center_x, center_y, future_x, future_y = self.apply_dead_reckoning(det)
+            # Write current and predicted positions
+            self.writer.writerow([elapsed_time, center_x, center_y, future_x, future_y, det[6]])
+            self.draw_predictions(frame, det, center_x, center_y)
+           # self.check_and_alert(detections, elapsed_time)
     def load_model(self, model_path):
         try:
             model = YOLO(model_path)
@@ -67,7 +113,8 @@ class ObjectTracker:
                 break
             consolidated_detections = utilsNeeded.run_yolov8_inference(self.model, frame)
             # consolidated_detections = utilsNeeded.consolidate_detections(detections)
-            self.track_objects(frame, consolidated_detections)
+            #self.track_objects(frame, consolidated_detections)
+            self.track_objects_DR(frame, consolidated_detections)
             cv2.imshow("Frame", frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -76,10 +123,13 @@ class ObjectTracker:
     def track_objects(self, frame, detections):
         for det in detections:
             elapsed_time = time.time() - self.start_time
-            center_x, center_y, kf_wrapper = self.apply_kalman_filter(det)
-            self.writer.writerow([elapsed_time, center_x, center_y, kf_wrapper.future_x, kf_wrapper.future_y, det[6]])
-            self.draw_predictions(frame, det, kf_wrapper)
-            self.check_and_alert(detections, elapsed_time)  # Pass elapsed time to check_and_alert
+            center_x, center_y, kf_wrapper, _, _ = self.apply_kalman_filter(det)
+            # Predict future position
+            future_x, future_y = kf_wrapper.predict2()  # Get future predictions
+            # Write current and predicted positions
+            self.writer.writerow([elapsed_time, center_x, center_y, future_x, future_y, det[6]])
+            self.draw_predictions(frame, det, center_x, center_y)
+            #self.check_and_alert(detections, elapsed_time)
 
     def check_and_alert(self, detections, elapsed_time):
         person_detections = [d for d in detections if d[6] == 'person']
@@ -156,14 +206,16 @@ class ObjectTracker:
             self.kalman_filters[cls].initialize(center_x, center_y)
         kf_wrapper = self.kalman_filters[cls]
         measurement = np.array([[center_x], [center_y]], np.float32)
+        kf_wrapper.predict2()
         kf_wrapper.correct(measurement)
-        kf_wrapper.predict(self.fps)
-        return center_x, center_y, kf_wrapper
+        update_x = center_x
+        update_y = center_y
+        return center_x, center_y, kf_wrapper, update_x, update_y
 
-    def draw_predictions(self, frame, det, kf_wrapper):
+    def draw_predictions(self, frame, det, x,y):
         x1, y1, x2, y2, _, cls, class_name = det
         color = utilsNeeded.get_color_by_id(int(cls))
-        cv2.circle(frame, (int(kf_wrapper.future_x), int(kf_wrapper.future_y)), 10, color, -1)
+        cv2.circle(frame, (int(x), int(y)), 10, color, -1)
         cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
         label = f"{class_name} ({cls})"
         cv2.putText(frame, label, (int(x1), int(y1 - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
