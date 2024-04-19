@@ -4,8 +4,7 @@ import csv
 import logging
 import time
 from utilsNeeded import load_model, initialize_video_capture, run_yolov8_inference, draw_predictions, cleanup, \
-    setup_csv_writer
-
+    setup_csv_writer, check_and_alert, save_alert_times, check_proximity, check_nearness, beep_alert
 
 class DeadReckoningTracker:
     """
@@ -23,6 +22,8 @@ class DeadReckoningTracker:
         file (file object): File object for the CSV writer.
         start_time (float): Start time of the tracking to calculate elapsed time.
         last_positions (dict): Dictionary storing last known positions of detected objects.
+        alert_start_time (float|None): Start time of the current alert period.
+        alert_times (list): List of times when alerts were issued.
     """
     def __init__(self, model_path, proximity_threshold, file_name_predict, file_name_alert, target, source=0):
         """
@@ -38,6 +39,10 @@ class DeadReckoningTracker:
         self.file, self.writer = setup_csv_writer(self.filename_prediction)
         self.start_time = time.time()
         self.last_positions = {}
+        self.alert_start_time = None
+        self.alert_times = []
+
+
 
     def run(self):
         """
@@ -59,6 +64,8 @@ class DeadReckoningTracker:
 
         cleanup(self.cap, self.file)
 
+
+
     def process_detections(self, detections, frame):
         """
         Processes each detection from YOLOv8, applies dead reckoning, predicts future positions, and logs data.
@@ -67,8 +74,26 @@ class DeadReckoningTracker:
         for det in detections:
             class_id = det[5]
             current_x, current_y, future_x, future_y = self.apply_dead_reckoning(det, timestamp)
-            self.writer.writerow([timestamp, class_id, current_x, current_y, future_x, future_y,det[6]])
+            self.writer.writerow([timestamp, class_id, current_x, current_y, future_x, future_y, det[6]])
             draw_predictions(frame, det, current_x, current_y, future_x, future_y)
+
+            # After processing the detection, check and alert if necessary
+            self.alert_start_time, self.alert_times = check_and_alert(
+                detections=detections,
+                target=self.target,
+                file_name=self.file_name_alert,
+                elapsed_time=timestamp - self.start_time,
+                alert_start_time=self.alert_start_time,
+                start_time=self.start_time,
+                alert_times=self.alert_times,
+                proximity_threshold=self.proximity_threshold,
+                save_alert_times_func=save_alert_times,
+                check_proximity_func=check_proximity,
+                check_nearness_func=check_nearness,
+                beep_alert_func=beep_alert
+            )
+
+
 
     def apply_dead_reckoning(self, det, timestamp):
         """
@@ -93,12 +118,13 @@ class DeadReckoningTracker:
 
         return current_x, current_y, future_x, future_y
 
+
 if __name__ == "__main__":
     tracker = DeadReckoningTracker(
         model_path='yolov8n.pt',
-        proximity_threshold=20,
-        file_name_predict='tracking_and_predictions.csv',
-        file_name_alert='alert_times.csv',
+        proximity_threshold=40,
+        file_name_predict='tracking_and_predictions_DR.csv',
+        file_name_alert='alert_times_DR.csv',
         target='person',
         source=0
     )

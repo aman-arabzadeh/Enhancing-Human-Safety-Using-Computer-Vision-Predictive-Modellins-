@@ -407,11 +407,18 @@ def save_alert_times(file_path, person_class, object_class, hazard_time, alert_t
         logs an error if unable to write to the file.
     """
     try:
+        # Calculate Response Time as the difference between Alert Time and Hazard Time
+        if hazard_time is not None and alert_time is not None:
+            response_time = alert_time - hazard_time
+        else:
+            response_time = None  # Set to None if either time is missing
+
         needs_header = not os.path.exists(file_path) or os.stat(file_path).st_size == 0
         with open(file_path, 'a', newline='') as file:
             writer = csv.writer(file)
             if needs_header:
                 writer.writerow(['Hazard Time', 'Alert Time', 'Person Class', 'Object Class', 'Response Time'])
-            writer.writerow([hazard_time, alert_time, person_class, object_class])
+            # Write the full row including the calculated Response Time
+            writer.writerow([hazard_time, alert_time, person_class, object_class, response_time])
     except IOError as e:
         logging.error(f"Failed to save alert time: {str(e)}")

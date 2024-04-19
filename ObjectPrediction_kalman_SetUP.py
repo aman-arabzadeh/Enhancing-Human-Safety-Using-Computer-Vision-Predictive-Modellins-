@@ -113,6 +113,12 @@ class ObjectTracker_Kalman:
             kf_wrapper.correct(np.array([[center_x], [center_y]], np.float32))
             self.writer.writerow([elapsed_time, center_x, center_y, future_x, future_y, det[6]])
             utilsNeeded.draw_predictions(frame, det, center_x, center_y, future_x, future_y)
+            # Check and alert function usage
+            self.alert_start_time, self.alert_times = utilsNeeded.check_and_alert(
+                detections, self.target, self.file_name_alert, elapsed_time, self.alert_start_time, self.start_time,
+                self.alert_times, self.proximity_threshold ,
+                utilsNeeded.save_alert_times, utilsNeeded.check_proximity, utilsNeeded.check_nearness,
+                utilsNeeded.beep_alert)
 
     def apply_kalman_filter(self, det):
         """
