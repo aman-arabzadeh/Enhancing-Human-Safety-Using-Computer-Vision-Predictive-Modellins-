@@ -1,7 +1,18 @@
 # utilsNeeded.py
-import cv2
-import winsound
 import hashlib
+import os
+
+import cv2
+import csv
+import logging
+
+import winsound
+
+from ultralytics import YOLO
+import time
+
+
+# This is helper file used for my both algorithms, functions needed in both
 # Authorship Information
 """
 Author: Koray Aman Arabzadeh
@@ -23,6 +34,7 @@ https://stackoverflow.com/
 https://github.com
 https://pieriantraining.com/kalman-filter-opencv-python-example/
 """
+
 
 def run_yolov8_inference(model, frame):
     """
@@ -117,19 +129,6 @@ def dead_reckoning(kf, dt=1):
     return int(future_x), int(future_y)
 
 
-def dead_reckoning2(kf, dt=1):
-
-    # Extract the current position (x, y) and velocity (vx, vy) from the Kalman filter's statePost
-    x, y, vx, vy = kf.statePost.flatten()
-    print(kf.statePost.flatten())
-    # Calculate the future position based on the current position and velocity
-    future_x = x + (vx * dt)
-    future_y = y + (vy * dt)
-
-    # Return the predicted future positions as integers
-    return int(future_x), int(future_y)
-
-
 # Function to play a beep sound as an alert
 def beep_alert(frequency=2500, duration=1000):
     """
@@ -200,91 +199,219 @@ def check_proximity(target, specific_object_detections):
                     y1_obj < y2_target and y2_obj > y1_target):
                 return True
     return False
-
-
-def check_nearness(target, specific_object_detections,):
+def check_nearness(target, specific_object_detections, proximity_threshold=10):
     """
     Checks if any specific object detection is near the bounding box of the target without overlapping.
 
     Args:
         target (list): List of detections for the target, where each detection is represented as [x1, y1, x2, y2].
         specific_object_detections (list): List of detections for specific objects, where each detection is represented as [x1, y1, x2, y2].
+        proximity_threshold (int): The pixel distance within which objects are considered near each other.
 
     Returns:
-        bool: True if any specific object detection is near the target without overlapping, False otherwise.
+        bool: True if any specific object detection is near the target within the proximity threshold, False otherwise.
     """
     for t_values in target:
-        x1_target, y1_target, x2_target, y2_target, _, _, _ = t_values
+        x1_target, y1_target, x2_target, y2_target, *_ = t_values
 
         for obj_det in specific_object_detections:
-            x1_obj, y1_obj, x2_obj, y2_obj, _, _, _= obj_det
+            x1_obj, y1_obj, x2_obj, y2_obj, *_ = obj_det
 
             # Check if bounding boxes are near without overlapping
-            if (x2_obj < x1_target and (x1_target - x2_obj) <= 10) or \
-               (x1_obj > x2_target and (x1_obj - x2_target) <= 10) or \
-               (y2_obj < y1_target and (y1_target - y2_obj) <= 10) or \
-               (y1_obj > y2_target and (y1_obj - y2_target) <= 10):
+            if (x2_obj < x1_target and (x1_target - x2_obj) <= proximity_threshold) or \
+                    (x1_obj > x2_target and (x1_obj - x2_target) <= proximity_threshold) or \
+                    (y2_obj < y1_target and (y1_target - y2_obj) <= proximity_threshold) or \
+                    (y1_obj > y2_target and (y1_obj - y2_target) <= proximity_threshold):
                 return True
 
     return False
 
 
-def consolidate_detections(detections, iou_threshold=0.5):
-    """
-    Consolidates detections by merging overlapping bounding boxes based on IoU threshold.
 
-    Parameters:
-        detections (list): List of detections, where each detection is [x1, y1, x2, y2, confidence, class_id, class_name].
-        iou_threshold (float): Threshold for IoU to consider two detections as overlapping.
+# utilsNeeded.py
+def draw_predictions(frame, det, current_x, current_y, future_x, future_y):
+    """
+    Draw bounding boxes, labels, and future position on the frame.
+
+    Args:
+        frame: Image on which to draw.
+        det: Detection details containing coordinates and class info [x1, y1, x2, y2, _, cls, class_name].
+        current_x, current_y: Current central coordinates of the object.
+        future_x, future_y: Predicted future coordinates of the object.
 
     Returns:
-        list: Consolidated list of detections.
+        None: Modifies the frame directly.
     """
-    if not detections:
-        return []
+    x1, y1, x2, y2, _, cls, class_name = det
+    color = get_color_by_id(cls)  # Existing function to get color based on class ID
 
-    # Initialize list to keep track of merged detections
-    consolidated = []
+    # Draw current position circle
+    cv2.circle(frame, (int(current_x), int(current_y)), 10, color, -1)
+    cv2.line(frame, (int(current_x), int(current_y + 20)), (int(current_x + 50), int(current_y + 20)), color, 2, 8)
 
-    # Sort detections by confidence score in descending order
-    detections.sort(key=lambda x: x[4], reverse=True)
+    # Draw rectangle around detected object
+    cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
 
-    # Array to keep track of whether a detection has been used
-    used = [False] * len(detections)
+    # Put label near the bounding box
+    label = f"{class_name} ({cls})"
+    cv2.putText(frame, label, (int(x1), int(y1 - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-    for i in range(len(detections)):
-        if not used[i]:
-            # Mark this detection as used
-            used[i] = True
-            x1, y1, x2, y2, conf, cls_id, class_name = detections[i]
-            # Initialize merged area as the area of the current detection
-            cx1, cy1, cx2, cy2 = x1, y1, x2, y2
+    # Draw future position circle in green
+    future_color = (0, 255, 0)  # RGB for green
+    cv2.circle(frame, (int(future_x), int(future_y)), 10, future_color, -1)
+    cv2.line(frame, (int(future_x), int(future_y + 20)), (int(future_x + 50), int(future_y + 20)), future_color, 2, 8)
 
-            # Look for overlapping detections to merge
-            for j in range(i + 1, len(detections)):
-                if not used[j]:
-                    nx1, ny1, nx2, ny2, nconf, ncls_id, nclass_name = detections[j]
 
-                    # Calculate the IoU
-                    inter_x1 = max(cx1, nx1)
-                    inter_y1 = max(cy1, ny1)
-                    inter_x2 = min(cx2, nx2)
-                    inter_y2 = min(cy2, ny2)
-                    inter_area = max(0, inter_x2 - inter_x1) * max(0, inter_y2 - inter_y1)
-                    area1 = (cx2 - cx1) * (cy2 - cy1)
-                    area2 = (nx2 - nx1) * (ny2 - ny1)
-                    union_area = area1 + area2 - inter_area
-                    iou = inter_area / union_area if union_area > 0 else 0
+def cleanup(cap, file):
+    """
+    Releases the video capture object and destroys all OpenCV windows. Closes the file if it is open.
 
-                    # If IoU exceeds the threshold, merge the detections
-                    if iou >= iou_threshold:
-                        used[j] = True  # Mark detection as used
-                        # Merge the bounding boxes
-                        cx1, cy1 = min(cx1, nx1), min(cy1, ny1)
-                        cx2, cy2 = max(cx2, nx2), max(cy2, ny2)
-                        conf = max(conf, nconf)  # Take the higher confidence
+    Args:
+        cap (cv2.VideoCapture): The video capture object used to acquire frames.
+        file (file object): The file object to write CSV data.
 
-            # Add merged detection to the consolidated list
-            consolidated.append([cx1, cy1, cx2, cy2, conf, cls_id, class_name])
+    Returns:
+        None
+    """
+    if cap:
+        cap.release()  # Release the video capture object
+    cv2.destroyAllWindows()  # Close all OpenCV windows
+    if file:
+        file.close()  # Close the CSV file if it's open
 
-    return consolidated
+
+def load_model(model_path):
+    """
+    Loads a YOLO model specified by the given path.
+
+    Args:
+        model_path (str): Path to the model file.
+
+    Returns:
+        model (YOLO): Loaded YOLO model if successful, None otherwise.
+
+    Raises:
+        logs an error if the model loading fails.
+    """
+    try:
+        model = YOLO(model_path)  # Attempt to load the model
+        logging.info("Model loaded successfully.")
+        return model
+    except Exception as e:
+        logging.error(f"Failed to load model: {str(e)}")
+        return None
+
+
+
+def initialize_video_capture(source):
+    """
+    Initializes the video capture object for the given source.
+
+    Args:
+        source (int | str): The device index or the video file path.
+
+    Returns:
+        cap (cv2.VideoCapture | None): The initialized video capture object if successful, None otherwise.
+
+    Raises:
+        logs an error if video source can't be opened.
+    """
+    cap = cv2.VideoCapture(source)
+    if not cap.isOpened():
+        logging.error("Failed to open video source.")
+        return None
+    return cap
+
+
+def setup_csv_writer(filename='tracking_and_predictions.csv'):
+    """
+    Sets up a CSV writer for logging tracking and predictions data.
+
+    Args:
+        filename (str): The name of the file where data will be written.
+
+    Returns:
+        tuple (file, writer): A tuple containing the file object and the CSV writer.
+
+    Raises:
+        logs an error if the file operations fail.
+    """
+    try:
+        file = open(filename, 'w', newline='')
+        writer = csv.writer(file)
+        writer.writerow(['timestamp', 'det_x', 'det_y', 'pred_x', 'pred_y', 'class_name'])
+        return file, writer
+    except IOError as e:
+        logging.error(f"File operations failed: {str(e)}")
+        return None, None
+
+
+def check_and_alert(detections, target, file_name, elapsed_time, alert_start_time, start_time, alert_times, proximity_threshold, save_alert_times_func, check_proximity_func, check_nearness_func, beep_alert_func):
+    """
+    Checks each detection against a target to determine if an alert should be issued based on proximity and overlap criteria.
+
+    Args:
+        detections (list): List of detected objects.
+        target (str): The class name of the target to check.
+        file_name (str): The file name where alert times will be saved.
+        elapsed_time (float): The current elapsed time from the start of detection.
+        alert_start_time (float): The start time of the current alert, if any.
+        start_time (float): The start time of the program for overall timing.
+        alert_times (list): List of times when alerts have been issued.
+        proximity_threshold (int): The proximity threshold for issuing alerts.
+        save_alert_times_func (function): The function to call to save alert times.
+        check_proximity_func (function): The function to check for object proximity.
+        check_nearness_func (function): The function to check for object nearness.
+        beep_alert_func (function): The function to execute an audio alert.
+
+    Returns:
+        tuple: Updated alert_start_time and alert_times.
+
+    Side effects:
+        This function can modify alert_times and issue audio alerts based on detection conditions.
+    """
+    person_detections = [d for d in detections if d[6] == target]
+    other_objects = [d for d in detections if d[6] != target]
+
+    alert_issued = False
+    for person in person_detections:
+        for obj in other_objects:
+            if check_proximity_func([person], [obj]) or check_nearness_func([person], [obj], proximity_threshold):
+                if alert_start_time is None:
+                    alert_start_time = elapsed_time  # Log the relative time when hazard detected
+                beep_alert_func(frequency=3000, duration=500)
+                alert_issued_at = elapsed_time + (time.time() - start_time) - alert_start_time
+                save_alert_times_func(file_name, person[6], obj[6], alert_start_time, alert_issued_at)
+                alert_issued = True
+
+    if not alert_issued and alert_start_time is not None:
+        alert_duration = elapsed_time - alert_start_time
+        alert_times.append((alert_start_time, alert_duration))
+        alert_start_time = None  # Reset the alert start time
+
+    return alert_start_time, alert_times
+
+
+def save_alert_times(file_path, person_class, object_class, hazard_time, alert_time):
+    """
+    Saves the alert times into a CSV file specified by the file path.
+
+    Args:
+        file_path (str): Path to the file where alert times will be recorded.
+        person_class (str): Class name of the person involved in the alert.
+        object_class (str): Class name of the object involved in the alert.
+        hazard_time (float): The time when the hazard was first detected.
+        alert_time (float): The time when the alert was issued.
+
+    Raises:
+        logs an error if unable to write to the file.
+    """
+    try:
+        needs_header = not os.path.exists(file_path) or os.stat(file_path).st_size == 0
+        with open(file_path, 'a', newline='') as file:
+            writer = csv.writer(file)
+            if needs_header:
+                writer.writerow(['Hazard Time', 'Alert Time', 'Person Class', 'Object Class', 'Response Time'])
+            writer.writerow([hazard_time, alert_time, person_class, object_class])
+    except IOError as e:
+        logging.error(f"Failed to save alert time: {str(e)}")

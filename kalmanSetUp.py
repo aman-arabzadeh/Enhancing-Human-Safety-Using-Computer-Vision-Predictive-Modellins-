@@ -5,7 +5,6 @@ import logging
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-
 class KalmanFilterWrapper:
     def __init__(self):
         self.future_x = None
@@ -33,27 +32,12 @@ class KalmanFilterWrapper:
         corrected = self.kf.correct(np.array(measurement, dtype=np.float32))
         return corrected
 
-    def predict2(self):
+    def predict(self):
         """Predict the next state of the object using the Kalman filter."""
         if not self.initialized:
             logging.error("Kalman filter must be initialized before prediction.")
             return None
         prediction = self.kf.predict()
         self.future_x, self.future_y = int(prediction[0]), int(prediction[1])
-        return self.future_x, self.future_y
-
-    def predict(self, fps, velocity_scale=1.0):
-        """Predict the next state of the object using the Kalman filter."""
-        if not self.initialized:
-            logging.error("Kalman filter must be initialized before prediction.")
-            return
-        self.kf.processNoiseCov = self.base_process_noise * velocity_scale
-        prediction = self.kf.predict()
-        current_predicted_x = prediction[0, 0]
-        current_predicted_y = prediction[1, 0]
-        velocity_x = prediction[2, 0]
-        velocity_y = prediction[3, 0]
-        dt = 1 / fps
-        self.future_x = current_predicted_x + velocity_x * dt
-        self.future_y = current_predicted_y + velocity_y * dt
+        logging.info(f"Predicted future position: ({self.future_x}, {self.future_y})")
         return self.future_x, self.future_y
