@@ -1,6 +1,7 @@
 import cv2 as cv
 import cv2
 import numpy as np
+import uuid
 import csv
 import logging
 import utilsNeeded
@@ -112,7 +113,7 @@ class ObjectTracker_Kalman:
             future_x, future_y = kf_wrapper.predict()  # Get future position before correction
             kf_wrapper.correct(np.array([[center_x], [center_y]], np.float32))
             self.writer.writerow([elapsed_time, center_x, center_y, future_x, future_y, det[6]])
-            utilsNeeded.draw_predictions(frame, det, center_x, center_y, future_x, future_y)
+            utilsNeeded.draw_predictions2(frame, det, center_x, center_y, future_x, future_y)
             # Check and alert function usage
             self.alert_start_time, self.alert_times = utilsNeeded.check_and_alert(
                 detections, self.target, self.file_name_alert, elapsed_time, self.alert_start_time, self.start_time,

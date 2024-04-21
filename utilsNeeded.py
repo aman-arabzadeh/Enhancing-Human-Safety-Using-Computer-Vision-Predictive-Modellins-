@@ -110,23 +110,6 @@ def get_color_by_id(class_id):
     return [r, g, b]
 
 
-# Function to predict future position based on current velocity using Dead Reckoning
-def dead_reckoning(kf, dt=1):
-    """
-    Predicts future position based on current velocity using Dead Reckoning.
-    Assumes the state vector format is [x, y, vx, vy].T.
-
-    Parameters:
-        kf (KalmanFilter): Kalman filter object containing the state vector.
-        dt (float, optional): Time step for predicting future position. Default is 1.
-
-    Returns:
-        tuple: Future position coordinates (future_x, future_y).
-    """
-    x, y, vx, vy = kf.x.flatten()
-    future_x = x + (vx * dt)
-    future_y = y + (vy * dt)
-    return int(future_x), int(future_y)
 
 
 # Function to play a beep sound as an alert
@@ -261,6 +244,37 @@ def draw_predictions(frame, det, current_x, current_y, future_x, future_y):
     cv2.circle(frame, (int(future_x), int(future_y)), 10, future_color, -1)
     cv2.line(frame, (int(future_x), int(future_y + 20)), (int(future_x + 50), int(future_y + 20)), future_color, 2, 8)
 
+def draw_predictions2(frame, det, current_x, current_y, future_x, future_y, color):
+    """
+    Draw bounding boxes, labels, and future position on the frame using a specified color.
+
+    Args:
+        frame: Image on which to draw.
+        det: Detection details containing coordinates and class info [x1, y1, x2, y2, _, cls, class_name].
+        current_x, current_y: Current central coordinates of the object.
+        future_x, future_y: Predicted future coordinates of the object.
+        color: Color tuple (B, G, R) used for drawing.
+
+    Returns:
+        None: Modifies the frame directly.
+    """
+    x1, y1, x2, y2, _, cls, class_name = det
+
+    # Draw current position circle
+    cv2.circle(frame, (int(current_x), int(current_y)), 10, color, -1)
+    cv2.line(frame, (int(current_x), int(current_y + 20)), (int(current_x + 50), int(current_y + 20)), color, 2, 8)
+
+    # Draw rectangle around detected object
+    cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
+
+    # Put label near the bounding box
+    label = f"{class_name} ({cls})"
+    cv2.putText(frame, label, (int(x1), int(y1 - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
+    # Draw future position circle in green
+    future_color = (0, 255, 0)  # RGB for green
+    cv2.circle(frame, (int(future_x), int(future_y)), 10, future_color, -1)
+    cv2.line(frame, (int(future_x), int(future_y + 20)), (int(future_x + 50), int(future_y + 20)), future_color, 2, 8)
 
 def cleanup(cap, file):
     """

@@ -13,7 +13,7 @@ except Exception as e:
 df[['det_x', 'det_y', 'pred_x', 'pred_y']] = df[['det_x', 'det_y', 'pred_x', 'pred_y']].astype(float)
 
 # Filter data for a specific class, e.g., 'cell phone'
-class_name = 'person'
+class_name = 'cell phone'
 df_filtered = df[df['class_name'] == class_name]
 
 # Create 3D plot
