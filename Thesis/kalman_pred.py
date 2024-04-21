@@ -63,6 +63,7 @@ class ObjectTracker_Kalman:
             self.kalman_filters[cls].initialize(center_x, center_y)
         return center_x, center_y, self.kalman_filters[cls]
 
+
 if __name__ == "__main__":
     tracker = ObjectTracker_Kalman(
         'yolov8n.pt',

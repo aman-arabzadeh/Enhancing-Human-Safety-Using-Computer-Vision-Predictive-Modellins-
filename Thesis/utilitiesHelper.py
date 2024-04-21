@@ -153,9 +153,27 @@ def setup_csv_writer(filename='tracking_and_predictions.csv'):
         return None, None
 
 
-def highlight_center_area(frame,center_area):
+import cv2
+
+
+def highlight_center_area(frame, center_area, label="Robotic Arm"):
+    """
+    Draw a rectangle on the frame around the specified center area and add a label inside it.
+
+    Parameters:
+    - frame: The image on which to draw.
+    - center_area: Tuple of (top_left, bottom_right) coordinates for the rectangle.
+    - label: Text to display inside the rectangle.
+    """
     top_left, bottom_right = center_area
-    cv2.rectangle(frame, top_left, bottom_right, (0, 255, 0), 2)
+    cv2.rectangle(frame, top_left, bottom_right, (0, 255, 0), 2)  # Draw the rectangle
+
+    # Calculate the position for the label to be at the top-center of the rectangle
+    text_x = top_left[0] + (bottom_right[0] - top_left[0]) // 2
+    text_y = top_left[1] - 10 if top_left[1] - 10 > 10 else top_left[1] + 20
+
+    # Put the label on the frame
+    cv2.putText(frame, label, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
 
 
 def update_center_area( frame_width, frame_height, factor=4):
