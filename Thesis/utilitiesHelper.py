@@ -140,17 +140,7 @@ def draw_predictions(frame, det, current_x, current_y, future_x, future_y, color
     cv2.circle(frame, (int(future_x), int(future_y)), 10, (0, 255, 0), -1)
 
 
-def save_alert_times( file_path, area_class, object_class, hazard_time):
-    try:
-        needs_header = not os.path.exists(file_path) or os.stat(file_path).st_size == 0
-        with open(file_path, 'a', newline='') as file:
-            writer = csv.writer(file)
-            if needs_header:
-                writer.writerow(['Hazard Time', 'area_class', 'Object Class'])
-            # Write the full row including the calculated Response Time
-            writer.writerow([hazard_time, area_class, object_class])
-    except IOError as e:
-        logging.error(f"Failed to save alert time: {str(e)}")
+
 
 def setup_csv_writer(filename='tracking_and_predictions.csv'):
     try:
@@ -223,10 +213,33 @@ def is_object_near(det, center_area, proximity_threshold):
     """
     return is_object_within_bounds(det, center_area) or is_object_near_boundary(det, proximity_threshold, center_area)
 
-def handle_alert(save_alert_times, det, timestamp, center_x, center_y, future_x, future_y, start_time, center_area):
+def handle_alert(alert_file,save_alert_times, det, timestamp, center_x, center_y, future_x, future_y, start_time, center_area):
     """
     Handle alert conditions and save the alert times accordingly.
     """
     hazard_time = timestamp - start_time
     alert_condition = "center" if is_object_within_bounds(det, center_area) else "Nearness"
-    save_alert_times(timestamp, det[6], center_x, center_y, future_x, future_y, hazard_time, alert_condition)
+    save_alert_times(alert_file,timestamp, det[6], center_x, center_y, future_x, future_y, hazard_time, alert_condition)
+
+def save_alert_times(alert_file, timestamp, object_class, location_x, location_y, future_pos_x, future_pos_y, hazard_time,
+                     alert_condition):
+    try:
+        needs_header = not os.path.exists(alert_file) or os.stat(alert_file).st_size == 0
+        with open(alert_file, 'a', newline='') as file:
+            writer = csv.writer(file)
+            if needs_header:
+                writer.writerow([
+                    'Event DateTime UTC',
+                    'Detected Object Type',
+                    'Object Location X (px)',
+                    'Object Location Y (px)',
+                    'Predicted Future Location X (px)',
+                    'Predicted Future Location Y (px)',
+                    'Hazard Time Since Start (seconds)',
+                    'Alert Type'
+                ])
+            writer.writerow(
+                [timestamp, object_class, location_x, location_y, future_pos_x, future_pos_y, hazard_time,
+                 alert_condition])
+    except IOError as e:
+        logging.error(f"Failed to save alert time: {str(e)}")

@@ -39,7 +39,7 @@ class ObjectTracker_Kalman:
         utilitiesHelper.cleanup(self.cap, self.file)
 
     def process_detections(self, detections, frame):
-        self.center_area = utilitiesHelper.update_center_area(frame.shape[1], frame.shape[0], factor=3)
+        self.center_area = utilitiesHelper.update_center_area(frame.shape[1], frame.shape[0], factor=2)
         timestamp = time.time()
         for det in detections:
             object_id = str(uuid.uuid4())
@@ -51,9 +51,8 @@ class ObjectTracker_Kalman:
             utilitiesHelper.draw_predictions(frame, det, center_x, center_y, future_x, future_y, color)
             if utilitiesHelper.is_object_near(det, self.center_area, self.proximity_threshold):
                 utilitiesHelper.trigger_proximity_alert(det)
-                utilitiesHelper.handle_alert(self.save_alert_times, det, timestamp, center_x, center_y, future_x, future_y,
-                             self.start_time)
-
+                utilitiesHelper.handle_alert(self.alert_file, utilitiesHelper.save_alert_times, det, timestamp, center_x, center_y, future_x, future_y,
+                             self.start_time, self.center_area)
 
     def apply_kalman_filter(self, det):
         x1, y1, x2, y2, _, cls, class_name = det

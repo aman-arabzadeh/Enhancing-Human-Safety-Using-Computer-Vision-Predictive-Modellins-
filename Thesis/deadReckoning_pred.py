@@ -22,28 +22,7 @@ class DeadReckoningTracker:
         self.alert_start_time = None
         self.center_area = None  # Will be updated upon the first frame read
 
-    def save_alert_times(self, timestamp, object_class, location_x, location_y, future_pos_x, future_pos_y, hazard_time,
-                         alert_condition):
-        try:
-            needs_header = not os.path.exists(self.alert_file) or os.stat(self.alert_file).st_size == 0
-            with open(self.alert_file, 'a', newline='') as file:
-                writer = csv.writer(file)
-                if needs_header:
-                    writer.writerow([
-                        'Event DateTime UTC',
-                        'Detected Object Type',
-                        'Object Location X (px)',
-                        'Object Location Y (px)',
-                        'Predicted Future Location X (px)',
-                        'Predicted Future Location Y (px)',
-                        'Hazard Time Since Start (seconds)',
-                        'Alert Type'
-                    ])
-                writer.writerow(
-                    [timestamp, object_class, location_x, location_y, future_pos_x, future_pos_y, hazard_time,
-                     alert_condition])
-        except IOError as e:
-            logging.error(f"Failed to save alert time: {str(e)}")
+
 
     def apply_dead_reckoning(self, det, timestamp):
         """
@@ -78,7 +57,7 @@ class DeadReckoningTracker:
             utilitiesHelper.draw_predictions(frame, det, center_x, center_y, future_x, future_y, color)
             if utilitiesHelper.is_object_near(det, self.center_area, self.proximity_threshold):
                 utilitiesHelper.trigger_proximity_alert(det)
-                utilitiesHelper.handle_alert(self.save_alert_times, det, timestamp, center_x, center_y, future_x, future_y,
+                utilitiesHelper.handle_alert(self.alert_file, utilitiesHelper.save_alert_times, det, timestamp, center_x, center_y, future_x, future_y,
                              self.start_time, self.center_area)
 
     def run(self):
