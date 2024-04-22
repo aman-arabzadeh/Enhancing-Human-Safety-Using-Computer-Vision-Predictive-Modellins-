@@ -153,27 +153,44 @@ def setup_csv_writer(filename='tracking_and_predictions.csv'):
         return None, None
 
 
-import cv2
-
-
-def highlight_center_area(frame, center_area, label="Robotic Arm"):
+def highlight_center_area(frame, center_area, label="Robotic Arm", overlay=None):
     """
-    Draw a rectangle on the frame around the specified center area and add a label inside it.
+    Draws a rectangle on the frame around the specified center area, adds a label at the top center of the rectangle,
+    and optionally overlays an image within the rectangle. If an overlay is provided, it is resized to fit the rectangle
+    and blended into the frame with partial transparency.
 
     Parameters:
-    - frame: The image on which to draw.
-    - center_area: Tuple of (top_left, bottom_right) coordinates for the rectangle.
-    - label: Text to display inside the rectangle.
+    - frame (np.array): The image (frame) on which to draw.
+    - center_area (tuple): Tuple of (top_left, bottom_right) coordinates for the rectangle.
+    - label (str): Text to display inside the rectangle.
+    - overlay (np.array, optional): Image to overlay within the rectangle. It will be resized to fit the rectangle if provided.
+
+    Returns:
+    - np.array: The modified frame with the rectangle, label, and optional overlay.
     """
     top_left, bottom_right = center_area
     cv2.rectangle(frame, top_left, bottom_right, (0, 255, 0), 2)  # Draw the rectangle
 
-    # Calculate the position for the label to be at the top-center of the rectangle
-    text_x = top_left[0] + (bottom_right[0] - top_left[0]) // 2
-    text_y = top_left[1] - 10 if top_left[1] - 10 > 10 else top_left[1] + 20
+    # Calculate label position to be at the top-center of the rectangle
+    label_x = (top_left[0] + bottom_right[0]) // 2
+    label_y = max(top_left[1] - 10, 10)  # Ensure label is within the frame's boundary
 
-    # Put the label on the frame
-    cv2.putText(frame, label, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
+    # Place the label on the frame
+    cv2.putText(frame, label, (label_x, label_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
+
+    # If an overlay image is provided, adjust its size and blend it into the rectangle
+    if overlay is not None:
+        overlay_height = bottom_right[1] - top_left[1]
+        overlay_width = bottom_right[0] - top_left[0]
+        resized_overlay = cv2.resize(overlay, (overlay_width, overlay_height))
+        # Blend the resized overlay into the rectangle with 50% transparency
+        region_of_interest = frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
+        frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]] = cv2.addWeighted(
+            region_of_interest, 0.5, resized_overlay, 0.5, 0)
+
+    return frame
+
+
 
 
 def update_center_area( frame_width, frame_height, factor=4):
