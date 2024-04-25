@@ -127,16 +127,20 @@ def is_object_within_bounds(det, center_area):
     - bool: True if the object is within the center area, False otherwise.
     """
     (x1_obj, y1_obj, x2_obj, y2_obj, _, _, _) = det
+    # let x1_obj = 6, x2, = 10, y1 = 12, y2 = 8
+
     (top_left, bottom_right) = center_area
+    #let top_left = (7,12) bottem right =(11,7)
     x1_area, y1_area = top_left
     x2_area, y2_area = bottom_right
 
-    return not (x2_obj < x1_area or x1_obj > x2_area or y2_obj < y1_area or y1_obj > y2_area)
+    return not (x2_obj < x1_area or x1_obj > x2_area or y2_obj < y1_area or y1_obj > y2_area) # Correct 
 
 
 def is_object_near_boundary(det, proximity_threshold, center_area):
     """
-    Determines if an object is near the boundary of a specified area, within a given proximity threshold.
+    Determines if an object is near the boundary of a specified area, within a given proximity threshold,
+     is calculated based on the  size of the frame 480x640 iz the totaal size and threshold is the unit of the frame.
 
     Parameters:
     - det: Detection details, expected to include the bounding box coordinates (x1, y1, x2, y2).
@@ -162,7 +166,8 @@ import cv2
 
 def draw_predictions(frame, det, current_x, current_y, future_x, future_y, color):
     """
-    Draws detection results and predictions on an image (frame).
+    Draws detection results and predictions on an image (frame).Used to clarify and distingfuash between what is current,
+     and what is the predicted values.
 
     This function visualizes the object detection and movement prediction results by drawing bounding boxes, labels,
     and circles that represent the current and predicted positions of objects on a frame.
@@ -196,8 +201,7 @@ def draw_predictions(frame, det, current_x, current_y, future_x, future_y, color
 
 
 
-import csv
-import logging
+
 
 def setup_csv_writer(filename='tracking_and_predictions.csv'):
     """
@@ -258,8 +262,8 @@ def highlight_center_area(frame, center_area, label="Robotic Arm", overlay=None)
 
     # If an overlay image is provided, adjust its size and blend it into the rectangle
     if overlay is not None:
-        overlay_height = bottom_right[1] - top_left[1]
-        overlay_width = bottom_right[0] - top_left[0]
+        overlay_height = bottom_right[1] - top_left[1] # if (6,12)  =  4
+        overlay_width = bottom_right[0] - top_left[0] #if (10,8) = 4
         resized_overlay = cv2.resize(overlay, (overlay_width, overlay_height))
         # Blend the resized overlay into the rectangle with 50% transparency
         region_of_interest = frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]

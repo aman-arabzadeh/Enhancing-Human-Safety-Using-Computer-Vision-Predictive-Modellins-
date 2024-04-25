@@ -31,7 +31,7 @@ class DeadReckoningTracker:
     - apply_dead_reckoning(det, timestamp): Apply dead reckoning to predict the object's future position.
     """
 
-    def __init__(self, model_path, proximity_threshold, file_name_predict, file_name_alert, label_name, source=0, predefined_img_path=None):
+    def __init__(self, model_path,frequency, duration, factor,  proximity_threshold, file_name_predict, file_name_alert, label_name, source=0, predefined_img_path=None):
         """
         Initializes the Dead Reckoning tracker with all necessary components and configurations, including
         an option for a predefined image overlay.
@@ -47,6 +47,7 @@ class DeadReckoningTracker:
         """
         self.model = utilitiesHelper.load_model(model_path)
         self.cap = utilitiesHelper.initialize_video_capture(source)
+        self.factor = factor
         self.file, self.writer = utilitiesHelper.setup_csv_writer(file_name_predict)
         self.alert_file = file_name_alert
         self.proximity_threshold = proximity_threshold
@@ -56,7 +57,8 @@ class DeadReckoningTracker:
         self.label = label_name
         self.center_area = None
         self.predefined_image = cv2.imread(predefined_img_path) if predefined_img_path else None
-
+        self.frequency = frequency
+        self.duration = duration
     def run(self):
         """
         Main method to start the tracking process, including handling the predefined image if provided.
@@ -64,7 +66,7 @@ class DeadReckoningTracker:
         """
         ret, frame = self.cap.read()  # Initial read to get frame dimensions
         if ret:
-            self.center_area = utilitiesHelper.update_center_area(frame.shape[1], frame.shape[0], factor=2)
+            self.center_area = utilitiesHelper.update_center_area(frame.shape[1], frame.shape[0], self.factor)
             if self.predefined_image is not None:
                 # Resize predefined image to fit center area dimensions
                 area_width = self.center_area[1][0] - self.center_area[0][0]
@@ -96,9 +98,16 @@ class DeadReckoningTracker:
         center_x, center_y, future_x, future_y = self.apply_dead_reckoning(det, time.time())
         utilitiesHelper.log_detection(self.writer, time.time(), center_x, center_y, future_x, future_y, det[6])
         utilitiesHelper.draw_predictions(frame, det, center_x, center_y, future_x, future_y, color)
+        '''
+                
         if utilitiesHelper.is_object_near(det, self.center_area, self.proximity_threshold):
-            utilitiesHelper.trigger_proximity_alert()
+            #print(f"Proximity alert: {det[6]} detected near or inside the central area!")
+
+            utilitiesHelper.trigger_proximity_alert(self.duration, self.frequency)
             utilitiesHelper.handle_alert(self.alert_file, utilitiesHelper.save_alert_times, det, time.time(), center_x, center_y, future_x, future_y, self.start_time, self.center_area)
+
+        
+        '''
 
     def apply_dead_reckoning(self, det, timestamp):
         """
@@ -112,6 +121,8 @@ class DeadReckoningTracker:
         - tuple: Current and predicted future positions of the object (current_x, current_y, future_x, future_y).
         """
         x1, y1, x2, y2, _, cls, _ = det
+        # Get the resolution
+
         current_x = int((x1 + x2) / 2)
         current_y = int((y1 + y2) / 2)
         last_info = self.last_positions.get(cls, (current_x, current_y, timestamp))
@@ -128,7 +139,10 @@ if __name__ == "__main__":
     tracker = DeadReckoningTracker(
         'yolov8n.pt',
         source=0,
+        duration=1000,
+        frequency=2500,
         proximity_threshold=40,
+        factor=3,
         file_name_predict='tracking_and_predictions_DR.csv',
         file_name_alert='alert_times_DR.csv',
         predefined_img_path='../data/8.jpg',
