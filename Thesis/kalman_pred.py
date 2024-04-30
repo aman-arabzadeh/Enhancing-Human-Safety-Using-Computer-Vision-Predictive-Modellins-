@@ -94,23 +94,22 @@ class ObjectTracker_Kalman:
         - frame (np.array): Current video frame to process.
         """
         for det in detections:
-            object_id = str(uuid.uuid4())
-            color = utilitiesHelper.get_color_by_id(object_id)
+            color = utilitiesHelper.get_color_by_id(det[5])
             center_x, center_y, kf_wrapper = self.apply_kalman_filter(det) #For this detection
             future_x, future_y = kf_wrapper.predict() #Predict the x,y future stares
             kf_wrapper.correct(np.array([[center_x], [center_y]])) #For update of the current_x,y
             utilitiesHelper.log_detection(self.writer, time.time(), center_x, center_y, future_x, future_y, det[6]) #Write file
             utilitiesHelper.draw_predictions(frame, det, center_x, center_y, future_x, future_y, color) #draws those circles in middle
-            '''
-                                  #Trigger alerts if inside the boundries or  near threshold
-
-                      if utilitiesHelper.is_object_near(det, self.center_area, self.proximity_threshold): 
-                print(f"Proximity alert: {det[6]} detected near or inside the central area!")
+            if utilitiesHelper.is_object_near(det, self.center_area, self.proximity_threshold):
+                pre_alert_time = time.time()
                 utilitiesHelper.trigger_proximity_alert(self.duration, self.frequency)
-                utilitiesHelper.handle_alert(self.alert_file, utilitiesHelper.save_alert_times, det, time.time(),
-                                             center_x, center_y, future_x, future_y, self.start_time, self.center_area)
+                post_alert_time = time.time()
+                # Note: Passing self.start_time and self.center_area to ensure they're used correctly in the alert handling.
+                utilitiesHelper.handle_alert(self.alert_file, utilitiesHelper.save_alert_times, det, pre_alert_time,
+                                             post_alert_time, center_x, center_y, future_x, future_y, self.start_time,
+                                             self.center_area)
 
-            '''
+
     def apply_kalman_filter(self, det):
         """
         Applies or initializes a Kalman filter for the detected object.
@@ -121,6 +120,7 @@ class ObjectTracker_Kalman:
         Returns:
         - tuple: Current center coordinates of the object and its Kalman filter wrapper.
         """
+
         x1, y1, x2, y2, _, cls, class_name = det #Get the topleft,x1,y1 and bottom_right x2,y2
         center_x = int((x1 + x2) / 2) #Get the center_x or avg
         center_y = int((y1 + y2) / 2) #Same for y

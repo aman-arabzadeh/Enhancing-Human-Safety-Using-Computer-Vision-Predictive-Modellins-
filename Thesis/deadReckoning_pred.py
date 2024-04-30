@@ -51,11 +51,11 @@ class DeadReckoningTracker:
         self.file, self.writer = utilitiesHelper.setup_csv_writer(file_name_predict)
         self.alert_file = file_name_alert
         self.proximity_threshold = proximity_threshold
-        self.start_time = time.time()
         self.last_positions = {}
         self.alert_times = []
         self.label = label_name
         self.center_area = None
+        self.start_time = time.time()
         self.predefined_image = cv2.imread(predefined_img_path) if predefined_img_path else None
         self.frequency = frequency
         self.duration = duration
@@ -86,28 +86,20 @@ class DeadReckoningTracker:
         utilitiesHelper.cleanup(self.cap, self.file)
 
     def process_detection(self, det, frame):
-        """
-        Processes each detection by applying dead reckoning based on previous positions and logs the data.
-
-        Parameters:
-        - det (list): Detection details including bounding box and class info.
-        - frame (np.array): The current frame for drawing detections.
-        """
-        object_id = str(uuid.uuid4())
+        object_id = det[5]
         color = utilitiesHelper.get_color_by_id(object_id)
         center_x, center_y, future_x, future_y = self.apply_dead_reckoning(det, time.time())
         utilitiesHelper.log_detection(self.writer, time.time(), center_x, center_y, future_x, future_y, det[6])
         utilitiesHelper.draw_predictions(frame, det, center_x, center_y, future_x, future_y, color)
-        '''
-                
+
         if utilitiesHelper.is_object_near(det, self.center_area, self.proximity_threshold):
-            #print(f"Proximity alert: {det[6]} detected near or inside the central area!")
-
+            pre_alert_time = time.time()
             utilitiesHelper.trigger_proximity_alert(self.duration, self.frequency)
-            utilitiesHelper.handle_alert(self.alert_file, utilitiesHelper.save_alert_times, det, time.time(), center_x, center_y, future_x, future_y, self.start_time, self.center_area)
-
-        
-        '''
+            post_alert_time = time.time()
+            # Note: Passing self.start_time and self.center_area to ensure they're used correctly in the alert handling.
+            utilitiesHelper.handle_alert(self.alert_file, utilitiesHelper.save_alert_times, det, pre_alert_time,
+                                         post_alert_time, center_x, center_y, future_x, future_y, self.start_time,
+                                         self.center_area)
 
     def apply_dead_reckoning(self, det, timestamp):
         """
@@ -125,6 +117,8 @@ class DeadReckoningTracker:
 
         current_x = int((x1 + x2) / 2)
         current_y = int((y1 + y2) / 2)
+
+
         last_info = self.last_positions.get(cls, (current_x, current_y, timestamp))
         time_delta = timestamp - last_info[2]
         velocity_x = (current_x - last_info[0]) / time_delta if time_delta > 0 else 0
@@ -142,7 +136,7 @@ if __name__ == "__main__":
         duration=1000,
         frequency=2500,
         proximity_threshold=40,
-        factor=3,
+        factor=4,
         file_name_predict='tracking_and_predictions_DR.csv',
         file_name_alert='alert_times_DR.csv',
         predefined_img_path='../data/8.jpg',

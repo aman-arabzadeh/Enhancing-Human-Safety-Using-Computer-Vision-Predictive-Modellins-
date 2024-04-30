@@ -37,40 +37,6 @@ https://pieriantraining.com/kalman-filter-opencv-python-example/
 """
 
 
-def run_yolov8_inference(model, frame):
-    """
-    Perform object detection on a single image using a preloaded YOLOv8 model.
-
-    Parameters:
-    - model: An instance of a YOLOv8 model ready for inference.
-    - frame: An image in BGR format (numpy array) for object detection.
-
-    Returns:
-    A list of detections, each represented as a list containing:
-    [bounding box coordinates (x1, y1, x2, y2), confidence score, class ID, class name]
-    """
-    # Perform inference with the YOLOv8 model
-    results = model.predict(frame)
-    detections = []
-
-    # Assuming the first item in results contains the detection information
-    if results:
-        detection_result = results[0]
-        xyxy = detection_result.boxes.xyxy.numpy()  # Bounding box coordinates
-        confidence = detection_result.boxes.conf.numpy()  # Confidence scores
-        class_ids = detection_result.boxes.cls.numpy().astype(int)  # Class IDs
-        class_names = [model.model.names[cls_id] for cls_id in class_ids]  # Class names
-
-        for i in range(len(xyxy)):
-            x1, y1, x2, y2 = map(int, xyxy[i])
-            conf = confidence[i]
-            cls_id = class_ids[i]
-            class_name = class_names[i]
-            detections.append([x1, y1, x2, y2, conf, cls_id, class_name])
-
-    return detections
-
-
 def get_color_by_id(class_id):
     """
     Generate a unique color for a given class ID.
@@ -203,6 +169,9 @@ def draw_predictions(frame, det, current_x, current_y, future_x, future_y, color
 
 
 
+
+
+
 def setup_csv_writer(filename='tracking_and_predictions.csv'):
     """
     Initializes and sets up a CSV writer for logging detection and prediction data.
@@ -301,6 +270,78 @@ def update_center_area(frame_width, frame_height, factor=4):
     bottom_right = (center_x + area_width // 2, center_y + area_height // 2)  # Calculate bottom-right corner
     return (top_left, bottom_right)  # Return the coordinates
 
+def log_detection(writer, timestamp, center_x, center_y, future_x, future_y, object_class):
+    """
+    Logs detection details into a CSV file using a CSV writer.
+
+    Parameters:
+    - writer (csv.writer): The CSV writer object used to write to the file.
+    - timestamp (float): The timestamp at which the detection was recorded.
+    - center_x (int): The current x-coordinate of the detected object.
+    - center_y (int): The current y-coordinate of the detected object.
+    - future_x (int): The predicted future x-coordinate of the detected object.
+    - future_y (int): The predicted future y-coordinate of the detected object.
+    - object_class (str): The classification of the detected object.
+
+    Returns:
+    - None
+    """
+    writer.writerow([timestamp, center_x, center_y, future_x, future_y, object_class])
+
+def is_object_near(det, center_area, proximity_threshold):
+    """
+    Determines if a detected object is near a specific area within a given proximity threshold.
+
+    Parameters:
+    - det (list): Detection data including the object's bounding box coordinates.
+    - center_area (tuple): A tuple containing the top-left and bottom-right coordinates defining the center area.
+    - proximity_threshold (int): The distance threshold that defines "nearness".
+
+    Returns:
+    - bool: True if the object is near the defined area, False otherwise.
+    """
+    return is_object_within_bounds(det, center_area) or is_object_near_boundary(det, proximity_threshold, center_area)
+
+
+def handle_alert(alert_file, save_alert_times, det, pre_alert_time, post_alert_time, center_x, center_y, future_x, future_y, start_time, center_area):
+    hazard_time = post_alert_time - start_time
+    alert_condition = "center" if is_object_within_bounds(det, center_area) else "Nearness"
+    save_alert_times(alert_file, pre_alert_time, post_alert_time, det[6], center_x, center_y, future_x, future_y, hazard_time, alert_condition, center_area)
+
+def save_alert_times(alert_file, pre_alert_time, post_alert_time, object_class, location_x, location_y, future_pos_x, future_pos_y, hazard_time, alert_condition, center_area):
+    alert_duration = post_alert_time - pre_alert_time  # Calculate the duration of the alert
+    try:
+        needs_header = not os.path.exists(alert_file) or os.stat(alert_file).st_size == 0
+        with open(alert_file, 'a', newline='') as file:
+            writer = csv.writer(file)
+            if needs_header:
+                writer.writerow([
+                    'Pre-alert DateTime UTC',
+                    'Post-alert DateTime UTC',
+                    'Alert Duration (seconds)',
+                    'Detected Object Type',
+                    'Object Location X (px)',
+                    'Object Location Y (px)',
+                    'Predicted Future Location X (px)',
+                    'Predicted Future Location Y (px)',
+                    'Hazard Time Since Start (seconds)',
+                    'Alert Type',
+                    'Center Area Top-Left X (px)',
+                    'Center Area Top-Left Y (px)',
+                    'Center Area Bottom-Right X (px)',
+                    'Center Area Bottom-Right Y (px)'
+                ])
+            writer.writerow([
+                pre_alert_time, post_alert_time, alert_duration, object_class, location_x, location_y, future_pos_x, future_pos_y, hazard_time, alert_condition,
+                center_area[0][0], center_area[0][1], center_area[1][0], center_area[1][1]
+            ])
+    except IOError as e:
+        logging.error(f"Failed to save alert time: {str(e)}")
+
+
+
+# Default functions needed
+
 
 def cleanup(cap, file):
     """
@@ -360,115 +401,38 @@ def initialize_video_capture(source):
         return None
     return cap
 
-def track_object(det):
-    """
-    Generate a unique identifier for a newly detected object.
 
-    This function is used to assign a unique identifier to an object detected in a video frame.
-    It currently generates a new UUID for each object, which does not track the object across frames.
-    Future implementations could match detected objects with existing tracked objects to maintain consistency.
+
+
+def run_yolov8_inference(model, frame):
+    """
+    Perform object detection on a single image using a preloaded YOLOv8 model.
 
     Parameters:
-    - det (list): The detection data for the object.
+    - model: An instance of a YOLOv8 model ready for inference.
+    - frame: An image in BGR format (numpy array) for object detection.
 
     Returns:
-    - str: A UUID string that uniquely identifies the object.
+    A list of detections, each represented as a list containing:
+    [bounding box coordinates (x1, y1, x2, y2), confidence score, class ID, class name]
     """
-    return str(uuid.uuid4())
+    # Perform inference with the YOLOv8 model
+    results = model.predict(frame)
+    detections = []
 
-def log_detection(writer, timestamp, center_x, center_y, future_x, future_y, object_class):
-    """
-    Logs detection details into a CSV file using a CSV writer.
+    # Assuming the first item in results contains the detection information
+    if results:
+        detection_result = results[0]
+        xyxy = detection_result.boxes.xyxy.numpy()  # Bounding box coordinates
+        confidence = detection_result.boxes.conf.numpy()  # Confidence scores
+        class_ids = detection_result.boxes.cls.numpy().astype(int)  # Class IDs
+        class_names = [model.model.names[cls_id] for cls_id in class_ids]  # Class names
 
-    Parameters:
-    - writer (csv.writer): The CSV writer object used to write to the file.
-    - timestamp (float): The timestamp at which the detection was recorded.
-    - center_x (int): The current x-coordinate of the detected object.
-    - center_y (int): The current y-coordinate of the detected object.
-    - future_x (int): The predicted future x-coordinate of the detected object.
-    - future_y (int): The predicted future y-coordinate of the detected object.
-    - object_class (str): The classification of the detected object.
+        for i in range(len(xyxy)):
+            x1, y1, x2, y2 = map(int, xyxy[i])
+            conf = confidence[i]
+            cls_id = class_ids[i]
+            class_name = class_names[i]
+            detections.append([x1, y1, x2, y2, conf, cls_id, class_name])
 
-    Returns:
-    - None
-    """
-    writer.writerow([timestamp, center_x, center_y, future_x, future_y, object_class])
-
-def is_object_near(det, center_area, proximity_threshold):
-    """
-    Determines if a detected object is near a specific area within a given proximity threshold.
-
-    Parameters:
-    - det (list): Detection data including the object's bounding box coordinates.
-    - center_area (tuple): A tuple containing the top-left and bottom-right coordinates defining the center area.
-    - proximity_threshold (int): The distance threshold that defines "nearness".
-
-    Returns:
-    - bool: True if the object is near the defined area, False otherwise.
-    """
-    return is_object_within_bounds(det, center_area) or is_object_near_boundary(det, proximity_threshold, center_area)
-
-def handle_alert(alert_file, save_alert_times, det, timestamp, center_x, center_y, future_x, future_y, start_time, center_area):
-    """
-    Processes alert conditions based on object detection data and logs the events.
-
-    Parameters:
-    - alert_file (str): File path where alert times are saved.
-    - save_alert_times (function): Function to call to save alert times to the file.
-    - det (list): Detection data of the object.
-    - timestamp (float): Current timestamp of the detection.
-    - center_x (int): Current x-coordinate of the object.
-    - center_y (int): Current y-coordinate of the object.
-    - future_x (int): Predicted future x-coordinate of the object.
-    - future_y (int): Predicted future y-coordinate of the object.
-    - start_time (float): The timestamp at the start of the monitoring session.
-    - center_area (tuple): The defined central area of interest.
-
-    Returns:
-    - None
-    """
-    hazard_time = timestamp - start_time
-    alert_condition = "center" if is_object_within_bounds(det, center_area) else "Nearness"
-    save_alert_times(alert_file, timestamp, det[6], center_x, center_y, future_x, future_y, hazard_time, alert_condition)
-
-def save_alert_times(alert_file, timestamp, object_class, location_x, location_y, future_pos_x, future_pos_y, hazard_time, alert_condition):
-    """
-    Saves alert time details to a CSV file.
-
-    Parameters:
-    - alert_file (str): File path to the alert log CSV file.
-    - timestamp (float): Timestamp at which the alert is logged.
-    - object_class (str): Classification of the object that triggered the alert.
-    - location_x (int): Current x-coordinate of the object.
-    - location_y (int): Current y-coordinate of the object.
-    - future_pos_x (int): Predicted future x-coordinate of the object.
-    - future_pos_y (int): Predicted future y-coordinate of the object.
-    - hazard_time (float): Time elapsed since the start of monitoring when the alert was triggered.
-    - alert_condition (str): Type of alert condition detected ('center' or 'Nearness').
-
-    Returns:
-    - None
-
-    Raises:
-    - IOError: If there is an issue opening or writing to the file.
-    """
-    try:
-        needs_header = not os.path.exists(alert_file) or os.stat(alert_file).st_size == 0
-        with open(alert_file, 'a', newline='') as file:
-            writer = csv.writer(file)
-            if needs_header:
-                writer.writerow([
-                    'Event DateTime UTC',
-                    'Detected Object Type',
-                    'Object Location X (px)',
-                    'Object Location Y (px)',
-                    'Predicted Future Location X (px)',
-                    'Predicted Future Location Y (px)',
-                    'Hazard Time Since Start (seconds)',
-                    'Alert Type'
-                ])
-            writer.writerow(
-                [timestamp, object_class, location_x, location_y, future_pos_x, future_pos_y, hazard_time,
-                 alert_condition])
-    except IOError as e:
-        logging.error(f"Failed to save alert time: {str(e)}")
+    return detections
