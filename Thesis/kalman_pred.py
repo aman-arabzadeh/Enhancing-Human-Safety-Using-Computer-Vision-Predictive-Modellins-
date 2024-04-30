@@ -2,6 +2,9 @@ import cv2
 import numpy as np
 import uuid
 import logging
+
+import pygame
+
 import utilitiesHelper  # Import utilities as helper functions
 import time
 from kalman import KalmanFilterWrapper
@@ -77,13 +80,32 @@ class ObjectTracker_Kalman:
 
         while ret:
             self.process_detection(utilitiesHelper.run_yolov8_inference(self.model, frame), frame)
-            #frame = utilitiesHelper.highlight_center_area(frame, self.center_area, self.label, self.predefined_image)
+            frame = utilitiesHelper.highlight_center_area(frame, self.center_area, self.label, self.predefined_image)
             cv2.imshow("Frame", frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
             ret, frame = self.cap.read()
 
         utilitiesHelper.cleanup(self.cap, self.file)
+
+    def trigger_proximity_alert(self, duration=2000, sound_file='awesomefollow.mp3'):
+        """
+        Triggers a sound to alert for proximity using a specified audio file.
+
+        Parameters:
+        - duration (int): Duration of the alert sound in milliseconds.
+        - sound_file (str): Path to the sound file to play.
+        """
+        pygame.mixer.init()
+        try:
+            sound = pygame.mixer.Sound(sound_file)
+            sound.play()
+            pygame.time.delay(duration)
+            sound.stop()
+        except Exception as e:
+            print(f"Error playing sound: {str(e)}")
+        finally:
+            pygame.mixer.quit()
 
     def process_detection(self, detections, frame):
         """
@@ -103,6 +125,8 @@ class ObjectTracker_Kalman:
             if utilitiesHelper.is_object_near(det, self.center_area, self.proximity_threshold):
                 pre_alert_time = time.time()
                 #utilitiesHelper.trigger_proximity_alert(self.duration, self.frequency)
+                filePath = 'awesomefollow.mp3'
+                self.trigger_proximity_alert(self.duration, filePath)
                 post_alert_time = time.time()
                 # Note: Passing self.start_time and self.center_area
                 utilitiesHelper.handle_alert(self.alert_file, utilitiesHelper.save_alert_times, det, pre_alert_time,
@@ -136,7 +160,7 @@ if __name__ == "__main__":
         #source=0,
         source=r'bouncingbalLinear.mp4',  # Change this to your video file path
         #source= r'bouncingbalDynamicParabel.mp4',
-        duration=1000,
+        duration=3000,
         frequency=2500,
         proximity_threshold=40,
         factor=2,
