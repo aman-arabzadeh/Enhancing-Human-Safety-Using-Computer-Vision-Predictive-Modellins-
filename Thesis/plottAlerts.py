@@ -9,7 +9,7 @@ data = pd.read_csv('alert_times.csv')
 data['Pre-alert DateTime UTC'] = pd.to_datetime(data['Pre-alert DateTime UTC'], unit='s')
 data['Post-alert DateTime UTC'] = pd.to_datetime(data['Post-alert DateTime UTC'], unit='s')
 # Filter data for only 'person' detected object type
-type_data = data[data['Detected Object Type'] == 'cell phone']
+type_data = data[data['Detected Object Type'] == 'sports ball']
 # Plot Alert Durations by Object Type
 plt.figure(figsize=(10, 6))
 sns.barplot(x='Detected Object Type', y='Alert Duration (seconds)', data=data)
@@ -40,7 +40,9 @@ rect = plt.Rectangle((top_left_x, top_left_y), bottom_right_x - top_left_x, bott
 plt.gca().add_patch(rect)
 plt.text(top_left_x, top_left_y - 10, 'Robotic Arm Area', color='red', fontsize=12, ha='left')
 
-plt.title('Object Movement from Current to Predicted Future Location with THE AREA OF ROBOTIC ARM ')
+#plt.title('Object Movement from Current to Predicted Future Location with THE AREA OF ROBOTIC ARM Running Dead Reckoning ')
+plt.title('Object Movement from Current to Predicted Future Location with THE AREA OF ROBOTIC ARM Running Kalman Filtering ')
+
 plt.xlabel('X Coordinate (px)')
 plt.ylabel('Y Coordinate (px)')
 plt.legend(title='Object ID')

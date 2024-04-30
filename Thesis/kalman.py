@@ -5,6 +5,8 @@ import logging
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+# Example I checked on Github
+"https://github.com/SriramEmarose/Motion-Prediction-with-Kalman-Filter/blob/master/KalmanFilter.py"
 class KalmanFilterWrapper:
     """
     A wrapper class for OpenCV's Kalman Filter, tailored for tracking objects in video streams.

@@ -77,7 +77,7 @@ class ObjectTracker_Kalman:
 
         while ret:
             self.process_detection(utilitiesHelper.run_yolov8_inference(self.model, frame), frame)
-            frame = utilitiesHelper.highlight_center_area(frame, self.center_area, self.label, self.predefined_image)
+            #frame = utilitiesHelper.highlight_center_area(frame, self.center_area, self.label, self.predefined_image)
             cv2.imshow("Frame", frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -102,7 +102,7 @@ class ObjectTracker_Kalman:
             utilitiesHelper.draw_predictions(frame, det, center_x, center_y, future_x, future_y, color) #draws those circles in middle
             if utilitiesHelper.is_object_near(det, self.center_area, self.proximity_threshold):
                 pre_alert_time = time.time()
-                utilitiesHelper.trigger_proximity_alert(self.duration, self.frequency)
+                #utilitiesHelper.trigger_proximity_alert(self.duration, self.frequency)
                 post_alert_time = time.time()
                 # Note: Passing self.start_time and self.center_area
                 utilitiesHelper.handle_alert(self.alert_file, utilitiesHelper.save_alert_times, det, pre_alert_time,
@@ -133,7 +133,9 @@ class ObjectTracker_Kalman:
 if __name__ == "__main__":
     tracker = ObjectTracker_Kalman(
         'yolov8n.pt',
-        source=0,
+        #source=0,
+        source=r'bouncingbalLinear.mp4',  # Change this to your video file path
+        #source= r'bouncingbalDynamicParabel.mp4',
         duration=1000,
         frequency=2500,
         proximity_threshold=40,

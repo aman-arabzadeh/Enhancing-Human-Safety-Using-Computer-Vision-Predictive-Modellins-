@@ -160,8 +160,15 @@ def draw_predictions(frame, det, current_x, current_y, future_x, future_y, color
     cv2.circle(frame, (int(current_x), int(current_y)), 10, color, -1)  # Draw circle at current position
     cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)  # Draw bounding box
     label = f"{class_name} ({cls})"  # Label format
+    if class_name == 'sports ball':
+        color = (255, 0, 0)  # Blue
+    elif class_name == 'frisbee':
+        color = (0, 0, 255)  # Red
+    else:
+        color = (255, 255, 255)  # White for unknown classes
+
     cv2.putText(frame, label, (int(x1), int(y1 - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)  # Draw label
-    cv2.circle(frame, (int(future_x), int(future_y)), 10, (0, 255, 0), -1)  # Draw circle at predicted position
+    cv2.circle(frame, (int(future_x), int(future_y)), 10, color, -1)  # Draw circle at predicted position
 
 
 
