@@ -104,7 +104,7 @@ class ObjectTracker_Kalman:
                 pre_alert_time = time.time()
                 utilitiesHelper.trigger_proximity_alert(self.duration, self.frequency)
                 post_alert_time = time.time()
-                # Note: Passing self.start_time and self.center_area to ensure they're used correctly in the alert handling.
+                # Note: Passing self.start_time and self.center_area
                 utilitiesHelper.handle_alert(self.alert_file, utilitiesHelper.save_alert_times, det, pre_alert_time,
                                              post_alert_time, center_x, center_y, future_x, future_y, self.start_time,
                                              self.center_area)

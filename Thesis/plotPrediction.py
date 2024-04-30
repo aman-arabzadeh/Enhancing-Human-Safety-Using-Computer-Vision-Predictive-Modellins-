@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 df = pd.read_csv('tracking_and_predictions.csv')# Kalman Filtering
 
 # Filter data for a specific class, e.g., 'cell phone'
-class_name = 'person'
+class_name = 'cell phone'
 df_filtered = df[df['class_name'] == class_name]
 
 # Count the number of detections and predictions
@@ -32,7 +32,7 @@ plt.legend(loc='upper left', bbox_to_anchor=(1.02, 1), borderaxespad=0.)
 plt.grid(True, linestyle='--', alpha=0.5)
 
 # Invert both x and y axes to rotate the plot 180 degrees
-plt.gca().invert_xaxis()
+#plt.gca().invert_xaxis()
 plt.gca().invert_yaxis()
 
 plt.tight_layout(pad=2)

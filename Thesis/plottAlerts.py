@@ -8,7 +8,8 @@ data = pd.read_csv('alert_times.csv')
 # Convert timestamps to readable datetime objects
 data['Pre-alert DateTime UTC'] = pd.to_datetime(data['Pre-alert DateTime UTC'], unit='s')
 data['Post-alert DateTime UTC'] = pd.to_datetime(data['Post-alert DateTime UTC'], unit='s')
-
+# Filter data for only 'person' detected object type
+type_data = data[data['Detected Object Type'] == 'cell phone']
 # Plot Alert Durations by Object Type
 plt.figure(figsize=(10, 6))
 sns.barplot(x='Detected Object Type', y='Alert Duration (seconds)', data=data)
@@ -18,24 +19,20 @@ plt.ylabel('Duration (seconds)')
 plt.xticks(rotation=45)
 plt.show()
 
-# Plot Object Movements with Central Area Highlighted
+
+# Plot Object Movements with Central Area Highlighted specifically for 'person'
 plt.figure(figsize=(12, 8))
-for index, row in data.iterrows():
+for index, row in type_data.iterrows():
     plt.plot([row['Object Location X (px)'], row['Predicted Future Location X (px)']],
              [row['Object Location Y (px)'], row['Predicted Future Location Y (px)']],
              marker='o', markersize=5, label=f"Obj {index+1} ({row['Detected Object Type']})" if index < 10 else "")
     plt.text(row['Object Location X (px)'], row['Object Location Y (px)'], str(index+1))
 
-# Assume the central area coordinates are consistent across all rows, use the first row to define the rectangle
-top_left_x = data.iloc[0]['Center Area Top-Left X (px)']
-top_left_y = data.iloc[0]['Center Area Top-Left Y (px)']
-bottom_right_x = data.iloc[0]['Center Area Bottom-Right X (px)']
-bottom_right_y = data.iloc[0]['Center Area Bottom-Right Y (px)']
-
-# Debugging output of the central area coordinates
-print("Central Area Coordinates:")
-print(f"Top-Left: ({top_left_x}, {top_left_y})")
-print(f"Bottom-Right: ({bottom_right_x}, {bottom_right_y})")
+# Assume the central area coordinates are consistent across all rows
+top_left_x = type_data.iloc[0]['Center Area Top-Left X (px)']
+top_left_y = type_data.iloc[0]['Center Area Top-Left Y (px)']
+bottom_right_x = type_data.iloc[0]['Center Area Bottom-Right X (px)']
+bottom_right_y = type_data.iloc[0]['Center Area Bottom-Right Y (px)']
 
 # Draw a rectangle for the central area with a label
 rect = plt.Rectangle((top_left_x, top_left_y), bottom_right_x - top_left_x, bottom_right_y - top_left_y,
@@ -43,14 +40,15 @@ rect = plt.Rectangle((top_left_x, top_left_y), bottom_right_x - top_left_x, bott
 plt.gca().add_patch(rect)
 plt.text(top_left_x, top_left_y - 10, 'Robotic Arm Area', color='red', fontsize=12, ha='left')
 
-plt.title('Object Movement from Current to Predicted Future Location with THE AREA OF ROBOTIC ARM')
+plt.title('Object Movement from Current to Predicted Future Location with THE AREA OF ROBOTIC ARM ')
 plt.xlabel('X Coordinate (px)')
 plt.ylabel('Y Coordinate (px)')
 plt.legend(title='Object ID')
-# Invert both x and y axes to rotate the plot 180 degrees
-plt.gca().invert_xaxis()
-plt.gca().invert_yaxis()
 plt.grid(True)
+# Invert both x and y axes to rotate the plot 180 degrees
+#plt.gca().invert_xaxis()
+plt.gca().invert_yaxis()
+plt.tight_layout(pad=2)
 plt.show()
 
 # Plot Hazard Time Distribution by Alert Type
