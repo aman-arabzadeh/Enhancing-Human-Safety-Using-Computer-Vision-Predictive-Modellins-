@@ -7,6 +7,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # Example I checked on Github
 "https://github.com/SriramEmarose/Motion-Prediction-with-Kalman-Filter/blob/master/KalmanFilter.py"
+#https://www.youtube.com/watch?v=sKJegbjS4N8 Video 1 I dounloaded dynamic
+#https://www.youtube.com/watch?v=zsdPYFPTdw0 second video linear
 class KalmanFilterWrapper:
     """
     A wrapper class for OpenCV's Kalman Filter, tailored for tracking objects in video streams.
