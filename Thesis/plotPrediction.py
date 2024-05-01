@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -42,3 +43,19 @@ plt.tight_layout(pad=2)
 
 # Display the plot
 plt.show()
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Assuming 'data' DataFrame already has 'det_x', 'det_y', 'pred_x', 'pred_y'
+errors = np.sqrt((df['det_x'] - df['pred_x'])**2 + (df['det_y'] - df['pred_y'])**2)
+plt.hist(errors, bins=50, alpha=0.75)
+plt.title('Histogram of Prediction Errors')
+plt.xlabel('Error Distance')
+plt.ylabel('Frequency')
+plt.show()
+
+# Display basic statistics
+print("Mean Error:", np.mean(errors))
+print("Median Error:", np.median(errors))
+print("Standard Deviation of Errors:", np.std(errors))
