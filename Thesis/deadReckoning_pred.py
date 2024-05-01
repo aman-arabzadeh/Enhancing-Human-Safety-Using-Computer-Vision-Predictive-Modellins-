@@ -78,11 +78,12 @@ class DeadReckoningTracker:
         if det[6].lower() != 'person':
             utilitiesHelper.log_detection(self.writer, time.time(), center_x, center_y, future_x, future_y,
                                           det[6])  # Write to file
+            utilitiesHelper.log_detection_data(det)
         utilitiesHelper.draw_predictions(frame, det, center_x, center_y, future_x, future_y, color)
 
         if utilitiesHelper.is_object_near(det, self.center_area, self.proximity_threshold):
             pre_alert_time = time.time()
-           # utilitiesHelper.trigger_proximity_alert(self.duration, self.frequency)
+            #utilitiesHelper.trigger_proximity_alert(self.duration, self.frequency)
             post_alert_time = time.time()
             utilitiesHelper.handle_alert(self.alert_file, utilitiesHelper.save_alert_times, det, pre_alert_time,
                                          post_alert_time, center_x, center_y, future_x, future_y, self.start_time,

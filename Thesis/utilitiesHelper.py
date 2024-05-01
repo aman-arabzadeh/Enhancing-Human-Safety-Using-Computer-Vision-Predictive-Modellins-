@@ -388,3 +388,23 @@ def run_yolov8_inference(model, frame):
             detections.append([x1, y1, x2, y2, conf, cls_id, class_name])
 
     return detections  # Return the list of detections
+
+
+def log_detection_data(det, file_path='yolo_data.csv'):
+    """
+    Logs detection data to a CSV file. It writes the headers if the file is newly created or empty.
+
+    Parameters:
+        det (list or tuple): A list or tuple where det[4] is the confidence score and det[6] is the class name.
+        file_path (str): The path to the CSV file where data will be logged.
+    """
+    # Check if the file already exists and has content
+    if not os.path.exists(file_path) or os.stat(file_path).st_size == 0:
+        # Open the file for writing and write headers
+        with open(file_path, 'w') as file:
+            file.write('Confidence Score,Class Name\n')  # Write the column headers
+
+    # Now, write the detection data
+    with open(file_path, 'a') as file:
+        # Write the confidence score and class name from the detection data
+        file.write(f"{det[4]},{det[6]}\n")

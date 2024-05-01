@@ -123,6 +123,7 @@ class ObjectTracker_Kalman:
             if det[6].lower() != 'person':
                 utilitiesHelper.log_detection(self.writer, time.time(), center_x, center_y, future_x, future_y,
                                               det[6])  # Write to file
+                utilitiesHelper.log_detection_data(det)
             utilitiesHelper.draw_predictions(frame, det, center_x, center_y, future_x, future_y, color) #draws those circles in middle
             if utilitiesHelper.is_object_near(det, self.center_area, self.proximity_threshold):
                 pre_alert_time = time.time()
@@ -159,8 +160,8 @@ if __name__ == "__main__":
     tracker = ObjectTracker_Kalman(
         'yolov8n.pt',
         #source=0,
-        source=r'bouncingbalLinear.mp4',  # Change this to your video file path
-        #source= r'bouncingbalDynamicParabel.mp4',
+        #source=r'bouncingbalLinear.mp4',  # Change this to your video file path
+        source= r'bouncingbalDynamicParabel.mp4',
         duration=3000,
         frequency=2500,
         proximity_threshold=40,
@@ -171,3 +172,12 @@ if __name__ == "__main__":
         label_name='Robotic Arm'
     )
     tracker.run()
+
+    """
+    Average Confidence Scores by Class:
+    Class Name
+    frisbee        0.443377
+    sports ball    0.370734
+    Name: Confidence Score, dtype: float64
+
+    """

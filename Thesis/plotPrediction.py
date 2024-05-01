@@ -3,8 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Load data from CSV
+df = pd.read_csv('tracking_and_predictions_DR.csv')  # Kalman Filtering
 #df = pd.read_csv('tracking_and_predictions.csv')  # Kalman Filtering
-df = pd.read_csv('tracking_and_predictions.csv')  # Kalman Filtering
 
 # Filter data for a specific class, e.g., 'cell phone'
 class_name = 'sports ball'
@@ -28,7 +28,7 @@ plt.scatter(df_filtered['det_x'], df_filtered['det_y'], c='blue', label=f'Detect
 plt.scatter(df_filtered['pred_x'], df_filtered['pred_y'], c='red', marker='x', label=f'Predicted Positions - {num_predictions}', zorder=1, alpha=0.6)
 
 # Title with counts and position information
-plt.title(f'Tracking and Prediction for "{class_name}" | Detected: {num_detections}, Predicted: {num_predictions}\nStart: {start_position.values}, End: {end_position.values}, KF', pad=20)
+plt.title(f'Dynamic movements tracking and Prediction for "{class_name}" | Detected: {num_detections}, Predicted: {num_predictions}\nStart: {start_position.values}, End: {end_position.values}, DR', pad=20)
 
 # Labels and Legend
 plt.xlabel('X Position', labelpad=10)
@@ -44,18 +44,3 @@ plt.tight_layout(pad=2)
 # Display the plot
 plt.show()
 
-import numpy as np
-import matplotlib.pyplot as plt
-
-# Assuming 'data' DataFrame already has 'det_x', 'det_y', 'pred_x', 'pred_y'
-errors = np.sqrt((df['det_x'] - df['pred_x'])**2 + (df['det_y'] - df['pred_y'])**2)
-plt.hist(errors, bins=50, alpha=0.75)
-plt.title('Histogram of Prediction Errors')
-plt.xlabel('Error Distance')
-plt.ylabel('Frequency')
-plt.show()
-
-# Display basic statistics
-print("Mean Error:", np.mean(errors))
-print("Median Error:", np.median(errors))
-print("Standard Deviation of Errors:", np.std(errors))
