@@ -75,6 +75,7 @@ def trigger_proximity_alert(duration=2000, freq=1000):
     """
     winsound.Beep(freq, duration)  # Play a beep sound
 
+
 def is_object_within_bounds(det, center_area):
     """
     Checks if an object is within the specified area.
@@ -281,10 +282,10 @@ def save_alert_times(alert_file, pre_alert_time, post_alert_time, object_class, 
                     'Post-alert DateTime UTC',
                     'Alert Duration (seconds)',
                     'Detected Object Type',
-                    'Object Location X (px)',
-                    'Object Location Y (px)',
-                    'Predicted Future Location X (px)',
-                    'Predicted Future Location Y (px)',
+                    'Object Location X1 (px)',
+                    'Object Location Y1 (px)',
+                    'Object Location X2 (px)',
+                    'Object Location Y2 (px)',
                     'Hazard Time Since Start (seconds)',
                     'Alert Type',
                     'Center Area Top-Left X (px)',

@@ -211,4 +211,3 @@ mae_y_DR_Linear = mean_absolute_error(data_DR_Linear['det_y_DR_Linear'], data_DR
 print("Dead Reckoning  Linear video movemnets sample")
 print("MSE X DR:", mse_x_DR_Linear, "MAE X DR:", mae_x_DR_Linear)
 print("MSE Y DR:", mse_y_DR_Linear, "MAE Y DR:", mae_y_DR_Linear)
-

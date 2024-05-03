@@ -128,12 +128,13 @@ class ObjectTracker_Kalman:
             if utilitiesHelper.is_object_near(det, self.center_area, self.proximity_threshold):
                 pre_alert_time = time.time()
                 #utilitiesHelper.trigger_proximity_alert(self.duration, self.frequency)
-                #filePath = 'awesomefollow.mp3'
-                #self.trigger_proximity_alert(self.duration, filePath)
+                filePath = 'awesomefollow.mp3'
+                self.trigger_proximity_alert(self.duration, filePath)
                 post_alert_time = time.time()
+                x1, y1, x2, y2, _, cls, class_name = det  # Get the topleft,x1,y1 and bottom_right x2,y2
                 # Note: Passing self.start_time and self.center_area
                 utilitiesHelper.handle_alert(self.alert_file, utilitiesHelper.save_alert_times, det, pre_alert_time,
-                                             post_alert_time, center_x, center_y, future_x, future_y, self.start_time,
+                                             post_alert_time, x1, y1, x2, y2, self.start_time,
                                              self.center_area)
 
     def apply_kalman_filter(self, det):
@@ -160,11 +161,11 @@ if __name__ == "__main__":
     tracker = ObjectTracker_Kalman(
         'yolov8n.pt',
         #source=0,
-        #source=r'bouncingbalLinear.mp4',  # Change this to your video file path
+        #source=r'bouncingbalLinear.mp4',
         source= r'bouncingbalDynamicParabel.mp4',
         duration=3000,
         frequency=2500,
-        proximity_threshold=40,
+        proximity_threshold=30,
         factor=3,
         file_name_predict='tracking_and_predictions.csv',
         file_name_alert='alert_times.csv',

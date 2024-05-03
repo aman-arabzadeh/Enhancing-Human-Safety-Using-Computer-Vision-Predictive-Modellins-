@@ -117,7 +117,7 @@ if __name__ == "__main__":
     tracker = DeadReckoningTracker(
         'yolov8n.pt',
         #source=0,
-        source=r'bouncingbalLinear.mp4',  # Change this to your video file path
+        source=r'bouncingbalLinear.mp4',
         #source= r'bouncingbalDynamicParabel.mp4',
         duration=1000,
         frequency=2500,
