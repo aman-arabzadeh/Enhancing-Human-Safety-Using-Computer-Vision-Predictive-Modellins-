@@ -94,27 +94,29 @@ def is_object_within_bounds(det, center_area):
     # Check if the object is completely outside the area
     return not (x2_obj < x1_area or x1_obj > x2_area or y2_obj < y1_area or y1_obj > y2_area)
 
-def is_object_near_boundary(det, proximity_threshold, center_area):
+def is_object_near_boundary(det, proximity_threshold, area):
     """
     Checks if an object is near the boundary of the specified area within a given threshold.
 
     Parameters:
     - det (tuple): Bounding box of the object (x1, y1, x2, y2, _, _, _).
     - proximity_threshold (int): Distance threshold to check for nearness to the boundary.
-    - center_area (tuple): A tuple containing the top-left and bottom-right coordinates of the area.
+    - area (tuple): A tuple containing the top-left and bottom-right coordinates of the area.
 
     Returns:
     - bool: True if the object is near the boundary, False otherwise.
     """
-    (x1_obj, y1_obj, x2_obj, y2_obj, _, _, _) = det
-    (top_left, bottom_right) = center_area
-    x1_area, y1_area = top_left
-    x2_area, y2_area = bottom_right
-    # Check if the object is within the proximity threshold from the boundary
-    return ((x1_obj > x2_area and (x1_obj - x2_area) <= proximity_threshold) or
-            (x2_obj < x1_area and (x1_area - x2_obj) <= proximity_threshold) or
-            (y1_obj > y2_area and (y1_obj - y2_area) <= proximity_threshold) or
-            (y2_obj < y1_area and (y1_area - y2_obj) <= proximity_threshold))
+    x1_obj, y1_obj, x2_obj, y2_obj, _, _, _ = det
+    (x1_area, y1_area), (x2_area, y2_area) = area
+
+    # Check proximity to each boundary
+    near_left = x1_obj - x1_area <= proximity_threshold and x1_obj > x1_area
+    near_right = x2_area - x2_obj <= proximity_threshold and x2_obj < x2_area
+    near_top = y1_obj - y1_area <= proximity_threshold and y1_obj > y1_area
+    near_bottom = y2_area - y2_obj <= proximity_threshold and y2_obj < y2_area
+
+    return near_left or near_right or near_top or near_bottom
+
 
 def draw_predictions(frame, det, current_x, current_y, future_x, future_y, color):
     """
@@ -163,55 +165,18 @@ def setup_csv_writer(filename='tracking_and_predictions.csv'):
     except IOError as e:
         logging.error(f"File operations failed: {str(e)}")
         return None, None
-def highlight_center_area(frame, center_area, label="Robotic Arm", overlay=None):
+
+
+def highlight_area(frame, area, label="Excluded Area"):
     """
-    Draws a highlighted area on the frame, optionally with a label and an overlay image.
-
-    Parameters:
-    - frame (np.array): The image frame on which to draw.
-    - center_area (tuple): A tuple containing the top-left and bottom-right coordinates of the area.
-    - label (str): The label to display on the highlighted area.
-    - overlay (np.array, optional): An image to overlay within the highlighted area.
-
-    Returns:
-    - np.array: The modified frame with the highlighted area.
+    Draws a highlighted area on the frame, optionally with a label.
     """
-    top_left, bottom_right = center_area
-    cv2.rectangle(frame, top_left, bottom_right, (0, 255, 0), 2)  # Draw a green rectangle around the center area
-
-    # Calculate position for the label to ensure it appears above the rectangle
+    top_left, bottom_right = area
+    cv2.rectangle(frame, top_left, bottom_right, (0, 0, 255), 2)  # Draw a red rectangle to indicate exclusion
     label_x = (top_left[0] + bottom_right[0]) // 2
-    label_y = max(top_left[1] - 10, 10)  # Ensure the label does not go outside the top boundary
-
-    cv2.putText(frame, label, (label_x, label_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
-
-    if overlay is not None:
-        # Resize and overlay an image on the highlighted area with 50% transparency
-        overlay_height = bottom_right[1] - top_left[1]
-        overlay_width = bottom_right[0] - top_left[0]
-        resized_overlay = cv2.resize(overlay, (overlay_width, overlay_height))
-        region_of_interest = frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
-        frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]] = cv2.addWeighted(region_of_interest, 0.5, resized_overlay, 0.5, 0)
-
+    label_y = max(top_left[1] - 10, 10)
+    cv2.putText(frame, label, (label_x, label_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
     return frame
-
-def update_center_area(frame_width, frame_height, factor=4):
-    """
-    Calculates the central area of the frame based on a scaling factor.
-
-    Parameters:
-    - frame_width (int): Width of the frame.
-    - frame_height (int): Height of the frame.
-    - factor (int): Divisor to reduce the dimensions of the central area.
-
-    Returns:
-    - tuple: Top-left and bottom-right coordinates of the central area.
-    """
-    center_x, center_y = frame_width // 2, frame_height // 2
-    area_width, area_height = frame_width // factor, frame_height // factor
-    top_left = (center_x - area_width // 2, center_y - area_height // 2)
-    bottom_right = (center_x + area_width // 2, center_y + area_height // 2)
-    return (top_left, bottom_right)
 
 def log_detection(writer, timestamp, center_x, center_y, future_x, future_y, object_class):
     """
