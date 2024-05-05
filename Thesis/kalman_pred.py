@@ -82,8 +82,10 @@ class ObjectTracker_Kalman:
             color = utilitiesHelper.get_color_by_id(det[5])
 
             center_x, center_y, kf_wrapper = self.apply_kalman_filter(det) #For this detection
-            future_x, future_y = kf_wrapper.predict() #Predict the x,y future stares
-            kf_wrapper.correct(np.array([[center_x], [center_y]])) #For update of the current_x,y
+            future_x, future_y = kf_wrapper.predict() #Predict
+            kf_wrapper.correct(np.array([[center_x], [center_y]])) #For update
+
+
             # Check if the detected object is NOT a person before logging
             if det[6].lower() != 'person':
                 utilitiesHelper.log_detection(self.writer, time.time(), center_x, center_y, future_x, future_y,
@@ -130,11 +132,11 @@ if __name__ == "__main__":
         #source= r'bouncingbalDynamicParabel.mp4',
         duration=3000,
         frequency=2500,
-        proximity_threshold=10,
+        proximity_threshold=30,
         file_name_predict='tracking_and_predictions.csv',
         file_name_alert='alert_times.csv',
         label_name='Robotic Arm',
-        any_area=((100, 100), (350, 350))
+        any_area=((150, 150), (300, 300))
 
     )
     tracker.run()

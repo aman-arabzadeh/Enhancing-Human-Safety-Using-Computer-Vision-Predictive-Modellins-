@@ -75,7 +75,11 @@ class DeadReckoningTracker:
                     print("Alert: Object near the boundary detected!")
 
                 color = utilitiesHelper.get_color_by_id(object_id)
+
+
                 center_x, center_y, future_x, future_y = self.apply_dead_reckoning(det, time.time())
+
+
 
                 # Log the detection if it is not a person
                 if class_name.lower() != 'person':
