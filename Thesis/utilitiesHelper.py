@@ -355,6 +355,12 @@ def run_yolov8_inference(model, frame):
 
     return detections  # Return the list of detections
 
+def is_area_excluded(x1, y1, x2, y2,any_area):
+    """
+    Check if the detection is within the excluded any_area.
+    """
+    return x1 >= any_area[0][0] and x2 <= any_area[1][0] and \
+           y1 >= any_area[0][1] and y2 <= any_area[1][1]
 
 def log_detection_data(det, file_path='yolo_data.csv'):
     """

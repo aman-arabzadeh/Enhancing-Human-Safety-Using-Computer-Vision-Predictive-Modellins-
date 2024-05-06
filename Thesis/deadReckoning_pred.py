@@ -66,9 +66,8 @@ class DeadReckoningTracker:
                 x1, y1, x2, y2, _, object_id, class_name = det  # Assuming detections are structured this way
 
                 # If the detected object is within the 'any_area', skip further processing
-                if x1 >= self.any_area[0][0] and x2 <= self.any_area[1][0] and \
-                        y1 >= self.any_area[0][1] and y2 <= self.any_area[1][1]:
-                    continue  # Skip processing for this detection
+                if utilitiesHelper.is_area_excluded(x1, y1, x2, y2, self.any_area):
+                    continue
 
                 # Check proximity to boundaries
                 if utilitiesHelper.is_object_near_boundary(det, 10, self.any_area):
@@ -95,7 +94,7 @@ class DeadReckoningTracker:
                     pre_alert_time = time.time()
                     # Placeholder for alert triggering function
                     post_alert_time = time.time()
-                    utilitiesHelper.trigger_proximity_alert(self.duration, self.frequency)
+                   # utilitiesHelper.trigger_proximity_alert(self.duration, self.frequency)
                     utilitiesHelper.handle_alert(self.alert_file, utilitiesHelper.save_alert_times, det, pre_alert_time,
                                                  post_alert_time, center_x, center_y, future_x, future_y,
                                                  self.start_time,
@@ -129,8 +128,9 @@ if __name__ == "__main__":
     tracker = DeadReckoningTracker(
         'yolov8n.pt',
         #source=0,
-        source=r'bouncingbalLinear.mp4',
-        #source= r'bouncingbalDynamicParabel.mp4',
+        #source=r'bouncingbalLinear.mp4',
+        source= r'bouncingbalDynamicParabel.mp4',
+        #source= r'ball.mp4',
         duration=1000,
         frequency=2500,
         proximity_threshold=70,
