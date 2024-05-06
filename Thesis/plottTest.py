@@ -1,15 +1,15 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+# https://www.pexels.com/sv-se/foto/102104/
 
-
-data = pd.read_csv("tracking_and_predictions_DR.csv")
+data = pd.read_csv("tracking_and_predictions.csv")
 
 # Convert timestamp to datetime
 data['timestamp'] = pd.to_datetime(data['timestamp'], unit='s')
 
 # Filter the data for a specific class
-clsname = "frisbee"
+clsname = "apple"
 class_data = data[data['class_name'] == clsname]
 
 # Separate actual and predicted coordinates

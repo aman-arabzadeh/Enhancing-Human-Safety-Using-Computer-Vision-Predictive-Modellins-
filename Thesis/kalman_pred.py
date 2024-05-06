@@ -124,9 +124,9 @@ class ObjectTracker_Kalman:
 if __name__ == "__main__":
     tracker = ObjectTracker_Kalman(
         'yolov8n.pt',
-        #source=r'ball.mp4',
         #source=0,
-        source=r'bouncingbalDynamicParabel.mp4',
+        #source=r'apple.mp4',
+        source=r'appleParabolic.mp4',
         coordinate_threshold = 20,
         duration=3000,
         frequency=2500,
