@@ -23,7 +23,7 @@ apple_image = tk.PhotoImage(file='apple.png')  # Update the path if needed
 apple = canvas.create_image((start_x + end_x) // 2, (start_y + end_y) // 2, image=apple_image)
 
 # Animation settings
-move_speed = 3
+move_speed = 5
 move_x = move_speed
 gravity = 0.09  # Gravity effect
 velocity_y = -3  #

@@ -86,8 +86,8 @@ class ObjectTracker_Kalman:
             utilitiesHelper.log_detection(self.writer, time.time(), center_x, center_y, future_x, future_y, class_name)
             utilitiesHelper.log_detection_data(det)
         utilitiesHelper.draw_predictions(frame, det, center_x, center_y, future_x, future_y, color)
-        #if utilitiesHelper.is_object_near(det, self.any_area, self.proximity_threshold):
-            #self.handle_proximity_alert(det, x1, y1, x2, y2)
+        if utilitiesHelper.is_object_near(det, self.any_area, self.proximity_threshold):
+            self.handle_proximity_alert(det, x1, y1, x2, y2)
 
     def is_significant_movement(self, cls, current_coords):
         if cls in self.last_coordinates:
@@ -116,7 +116,7 @@ class ObjectTracker_Kalman:
         Handle proximity alerts for detected objects near any_area.
         """
         pre_alert_time = time.time()
-        utilitiesHelper.trigger_proximity_alert(self.duration, self.frequency)
+        #utilitiesHelper.trigger_proximity_alert(self.duration, self.frequency)
         post_alert_time = time.time()
         utilitiesHelper.handle_alert(self.alert_file, utilitiesHelper.save_alert_times, det, pre_alert_time,
                                      post_alert_time, x1, y1, x2, y2, self.start_time, self.any_area)
@@ -125,13 +125,14 @@ if __name__ == "__main__":
     tracker = ObjectTracker_Kalman(
         'yolov8n.pt',
         #source=0,
+        source=r'apple.mp4',
         #source=r'apple.mp4',
-        source=r'appleParabolic.mp4',
+        #source=r'appleParabolic.mp4',
         coordinate_threshold = 20,
         duration=3000,
         frequency=2500,
         proximity_threshold=30,
-        file_name_predict='tracking_and_predictions.csv',
+        file_name_predict='tracking_and_predictions_linear.csv',
         file_name_alert='alert_times.csv',
         label_name='Robotic Arm',
         any_area=((150, 150), (300, 300))

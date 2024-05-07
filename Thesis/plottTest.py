@@ -1,22 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-# https://www.pexels.com/sv-se/foto/102104/
 
-data = pd.read_csv("tracking_and_predictions.csv")
-
-# Convert timestamp to datetime
-data['timestamp'] = pd.to_datetime(data['timestamp'], unit='s')
-
-# Filter the data for a specific class
-clsname = "apple"
-class_data = data[data['class_name'] == clsname]
-
-# Separate actual and predicted coordinates
-actual = class_data[['det_x', 'det_y']].values
-predicted = class_data[['pred_x', 'pred_y']].values
-
-# Calculate MAE and MSE
 def mean_absolute_error(actual, predicted):
     """Calculate the Mean Absolute Error using Euclidean distance between actual and predicted points."""
     actual = np.array(actual)
@@ -26,29 +11,45 @@ def mean_absolute_error(actual, predicted):
 
 def mean_squared_error(actual, predicted):
     """Calculate the Mean Squared Error using the squared Euclidean distance between actual and predicted points."""
-
     actual = np.array(actual)
     predicted = np.array(predicted)
     squared_distances = np.sum((actual - predicted) ** 2, axis=1)
     return np.mean(squared_distances)
 
-mae = mean_absolute_error(actual, predicted)
-mse = mean_squared_error(actual, predicted)
+def plot_predictions(filename, title):
+    # Load the data
+    data = pd.read_csv(filename)
 
-print(f"Mean Absolute Error: {mae}")
-print(f"Mean Squared Error: {mse}")
+    # Shift the actual detected positions to align them for comparison with the next prediction
+    actual_next = data[['det_x', 'det_y']].shift(-1)
+    data['next_actual_x'] = actual_next['det_x']
+    data['next_actual_y'] = actual_next['det_y']
 
-# Create a figure with larger size
-plt.figure(figsize=(15, 10))
+    # Drop the last row because it will have NaN values for 'next_actual_x' and 'next_actual_y' after the shift
+    data = data[:-1]
 
-# Plot actual and predicted x-coordinates
-plt.plot(class_data['timestamp'], class_data['det_x'], label=f'{clsname} det_x')
-plt.plot(class_data['timestamp'], class_data['pred_x'], label=f'{clsname} pred_x')
+    # Calculate MAE and MSE between predicted points and the next actual points
+    mae = mean_absolute_error(data[['pred_x', 'pred_y']].values, data[['next_actual_x', 'next_actual_y']].values)
+    mse = mean_squared_error(data[['pred_x', 'pred_y']].values, data[['next_actual_x', 'next_actual_y']].values)
 
-# Add general plot formatting
-plt.legend()
-plt.title('Tracking and Prediction Comparison')
-plt.xlabel('Timestamp')
-plt.ylabel('Coordinates')
-plt.tight_layout()
-plt.show()
+    # Plotting
+    plt.figure(figsize=(10, 6))
+    for index, row in data.iterrows():
+        plt.plot([row['pred_x'], row['next_actual_x']], [row['pred_y'], row['next_actual_y']], 'r-', marker='o')
+        plt.text(row['pred_x'], row['pred_y'], f'Pred {index}', fontsize=8, ha='right')
+        plt.text(row['next_actual_x'], row['next_actual_y'], f'Actual {index+1}', fontsize=8, ha='left')
+
+    plt.title(f"{title}\nMAE: {mae:.2f}, MSE: {mse:.2f}")
+    plt.xlabel('X coordinate')
+    plt.ylabel('Y coordinate')
+    plt.grid(True)
+    plt.show()
+
+    # Optionally return MAE and MSE if you need these values for further analysis
+    return mae, mse
+
+# Usage examples:
+plot_predictions('tracking_and_predictions.csv', 'Predicted Position to Subsequent Actual Position - Kalman Filtering Parabolic Movements')
+plot_predictions('tracking_and_predictions_DR.csv', 'Predicted Position to Subsequent Actual Position - Dead Reckoning Parabolic Movements')
+plot_predictions('tracking_and_predictions_linear.csv', 'Predicted Position to Subsequent Actual Position - Kalman Filtering Linear Movements')
+plot_predictions('tracking_and_predictions_DRLinear.csv', 'Predicted Position to Subsequent Actual Position - Dead Reckoning Linear Movements')
